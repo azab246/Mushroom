@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/AbdalrahmanXYZ/Mushroom/Main/res/Mushroom.svg" align="left" height="160px" vspace="20px">
+<img src="https://raw.githubusercontent.com/AbdalrahmanXYZ/Mushroom/Main/src/res/Mushroom.svg" align="left" height="160px" vspace="20px">
 
 ## Mushroom 
 
