@@ -1,0 +1,52 @@
+@define-color accent_color white;
+
+@define-color accent_bg_color #055CB3;
+@define-color accent_fg_color white;
+
+
+.Accept-Button {
+  color: white;
+  background-color: #055CB3;
+}
+
+.Accept-Button:hover {
+  color: white;
+  background-color: #0577B3;
+}
+
+.Cancel-Button {
+  color: white;
+  background-color: #C51A41;
+}
+
+.Cancel-Button:hover {
+  color: white;
+  background-color: #DC1A41;
+}
+
+.Progress-Fail > trough > progress {
+  background-image: none;
+  background-color: #C51A41;
+}
+
+.Download-Button {
+  color: white;
+  background-color: #0C703D;
+}
+
+.Download-Button:hover {
+  color: white;
+  background-color: #0C8C3D;
+}
+
+.Other {
+  color: white;
+  background-color: #7C2865;
+}
+
+.DownloadPrefBar {
+  padding-right : 15px;
+  padding-left : 15px;
+  padding-top : 5px;
+  padding-bottom : 5px;
+}

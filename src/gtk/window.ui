@@ -1,0 +1,567 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="libadwaita" version="1.0"/>
+  <requires lib="pango" version="1.0"/>
+  <template class="MushroomWindow" parent="GtkApplicationWindow">
+    <property name="default-width">800</property>
+    <property name="default-height">650</property>
+    <child type="titlebar">
+      <object class="AdwHeaderBar">
+        <property name="centering-policy">strict</property>
+        <child type="title">
+          <object class="AdwViewSwitcherTitle" id="title">
+            <property name="stack">stack</property>
+            <property name="title">Mushroom</property>
+          </object>
+        </child>
+        <child type="start">
+          <object class="GtkMenuButton" id="MenuButton">
+            <property name="icon-name">open-menu-symbolic</property>
+            <property name="menu-model">primary_menu</property>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwToastOverlay" id="MainToastOverlay">
+        <child>
+            <object class="AdwViewStack" id="stack">
+              <child>
+                <object class="AdwViewStackPage">
+                  <property name="name">download</property>
+                  <property name="title">Download</property>
+                  <property name="icon-name">document-save-symbolic</property>
+                  <property name="child">
+                    <object class="GtkBox" id="MainBox">
+                      <child>
+                        <object class="AdwCarousel" id="Carousel">
+                          <property name="vexpand">True</property>
+                          <property name="hexpand">True</property>
+                          <property name="interactive">False</property>
+                          <property name="allow-scroll-wheel">False</property>
+                          <property name="allow-mouse-drag">False</property>
+                          <property name="spacing">500</property>
+                          <child>
+                            <object class="GtkRevealer" id="MainRevealer">
+                              <property name="margin-top">50</property>
+                              <property name="margin-bottom">50</property>
+                              <property name="margin-start">40</property>
+                              <property name="margin-end">40</property>
+                              <property name="transition-type">0</property>
+                              <property name="reveal-child">True</property>
+                              <child>
+                                <object class="GtkBox" id="Page1Hbox">
+                                  <property name="orientation">vertical</property>
+                                  <property name="spacing">20</property>
+                                  <property name="halign">center</property>
+                                  <property name="valign">center</property>
+                                  <property name="vexpand">True</property>
+                                  <child>
+                                    <object class="GtkImage" id="Mushroomsvg">
+                                      <property name="resource">/com/github/azab246/mushroom/res/Mushroom.svg</property>
+                                      <property name="pixel-size">200</property>
+                                    </object>
+                                  </child>
+                                  <child>
+                                    <object class="GtkBox" id="Inputs_Box">
+                                      <property name="orientation">vertical</property>
+                                      <property name="spacing">20</property>
+                                      <property name="halign">center</property>
+                                      <property name="valign">center</property>
+                                      <child>
+                                        <object class="GtkLabel">
+                                          <property name="margin-top">10</property>
+                                          <property name="label" translatable="yes">Mushroom</property>
+                                          <style>
+                                            <class name="title-1"/>
+                                          </style>
+                                        </object>
+                                      </child>
+                                      <child>
+                                        <object class="GtkLabel">
+                                          <property name="margin-bottom">10</property>
+                                          <property name="label" translatable="yes">Downloader For Youtube Videos/Playlists, Enter a URL To Start</property>
+                                          <style>
+                                            <class name="dim-label"/>
+                                          </style>
+                                        </object>
+                                      </child>
+                                      <child>
+                                        <object class="GtkBox">
+                                          <property name="halign">center</property>
+                                          <child>
+                                            <object class="GtkEntry" id="MainEntry">
+                                              <property name="width-request">400</property>
+                                              <property name="placeholder-text"> Link</property>
+                                              <property name="primary-icon-name">edit-paste-symbolic</property>
+                                              <property name="buffer">
+                                                <object class="GtkEntryBuffer" id="MainBuffer">
+                                                </object>
+                                              </property>
+                                            </object>
+                                          </child>
+                                        </object>
+                                      </child>
+                                      <child>
+                                        <object class="GtkRevealer" id="ListSuggestionRevealer">
+                                          <property name="transition-duration">150</property>
+                                          <property name="transition-type">4</property>
+                                          <property name="reveal-child">false</property>
+                                          <child>
+                                            <object class="GtkBox" id="SuggestionBox">
+                                              <property name="halign">center</property>
+                                              <child>
+                                                <object class="GtkCheckButton" id="SuggestionCheck">
+                                                  <property name="label"> Download The Entire Playlist</property>
+                                                  <property name="active">False</property>
+                                                  <property name="can-focus">False</property>
+                                                </object>
+                                              </child>
+                                            </object>
+                                          </child>
+                                        </object>
+                                      </child>
+                                      <child>
+                                        <object class="GtkBox">
+                                          <property name="halign">center</property>
+                                          <child>
+                                             <object class="GtkButton" id="SubmitButton">
+                                              <property name="label">Download Video</property>
+                                              <property name="sensitive">False</property>
+                                              <property name="width-request">200</property>
+                                              <signal name="clicked" handler="Submit_Func"/>
+                                              <style>
+                                                <class name="Accept-Button"/>
+                                                <class name="pill"/>
+                                              </style>
+                                            </object>
+                                          </child>
+                                        </object>
+                                      </child>
+                                    </object>
+                                  </child>
+                                </object>
+                              </child>
+                            </object>
+                          </child>
+                          <child>
+                            <object class="GtkRevealer" id="loading_revealer">
+                              <property name="margin-top">50</property>
+                              <property name="margin-bottom">50</property>
+                              <property name="margin-start">40</property>
+                              <property name="margin-end">40</property>
+                              <property name="transition-type">0</property>
+                              <property name="reveal-child">False</property>
+                              <child>
+                                <object class="AdwStatusPage" id="LoadingAdwPage">
+                                  <property name="icon-name">mail-send-receive-symbolic</property>
+                                  <property name="title" translatable="yes">Loading</property>
+                                  <property name="description" translatable="yes">Getting The Necessary Data To Complete Your Request</property>
+                                  <property name="vexpand">True</property>
+                                  <property name="width-request">500</property>
+                                  <child>
+                                    <object class="GtkBox">
+                                      <property name="halign">center</property>
+                                      <child>
+                                        <object class="GtkProgressBar" id="LoadingProgressBar">
+                                          <property name="pulse_step">0.5</property>
+                                          <property name="width-request">250</property>
+                                        </object>
+                                      </child>
+                                    </object>
+                                  </child>
+                                </object>
+                              </child>
+                            </object>
+                          </child>
+                          <child>
+                            <object class="GtkRevealer" id="List_revealer">
+                              <property name="transition-type">0</property>
+                              <property name="reveal-child">False</property>
+                              <child>
+                                <object class="GtkScrolledWindow" id="list_scrolled_window">
+                                  <property name="hscrollbar_policy">2</property>
+                                  <property name="vscrollbar_policy">1</property>
+                                  <property name="hexpand">True</property>
+                                  <property name="child">
+                                    <object class="AdwClamp">
+                                      <property name="maximum-size">1000</property>
+                                      <property name="tightening-threshold">500</property>
+                                      <property name="margin-start">40</property>
+                                      <property name="margin-end">40</property>
+                                      <property name="margin-bottom">50</property>
+                                      <property name="child">
+                                        <object class="GtkBox">
+                                          <property name="orientation">vertical</property>
+                                          <property name="spacing">20</property>
+                                          <property name="halign">center</property>
+                                          <property name="valign">center</property>
+                                          <property name="hexpand">True</property>
+                                          <child>
+                                            <object class="GtkBox">
+                                              <property name="margin-top">40</property>
+                                              <property name="halign">start</property>
+                                              <child>
+                                                <object class="GtkButton">
+                                                  <property name="label">Go Back</property>
+                                                  <signal name="clicked" handler="On_Go_Back"/>
+                                                  <style>
+                                                    <class name="Cancel-Button"/>
+                                                    <class name="pill"/>
+                                                  </style>
+                                                </object>
+                                              </child>
+                                            </object>
+                                          </child>
+                                          <child>
+                                            <object class="AdwStatusPage">
+                                              <property name="icon-name">view-list-symbolic</property>
+                                              <property name="title" translatable="yes">Configure Your Request</property>
+                                              <property name="description" translatable="yes">Select Your Preferences for This Download</property>
+                                              <property name="height-request">300</property>
+                                            </object>
+                                          </child>
+                                          <child>
+                                            <object class="GtkBox">
+                                              <property name="spacing">5</property>
+                                              <property name="halign">center</property>
+                                              <style>
+                                                <class name="DownloadPrefBar"/>
+                                                <class name="card"/>
+                                                <class name="toolbar"/>
+                                                <class name="horizontal"/>
+                                              </style>
+                                              <child>
+                                                <object class="GtkLabel" id="ListNameLabel">
+                                                  <property name="label"></property>
+                                                  <style>
+                                                    <class name="heading"/>
+                                                  </style>
+                                                </object>
+                                              </child>
+                                              <child>
+                                                <object class="GtkLabel">
+                                                  <property name="label">  Type : </property>
+                                                  <style>
+                                                    <class name="heading"/>
+                                                  </style>
+                                                </object>
+                                              </child>
+                                              <child>
+                                                <object class="GtkComboBox" id="ListTypeBox">
+                                                  <signal name="changed" handler="on_list_type_change"/>
+                                                </object>
+                                              </child>
+                                              <child>
+                                                <object class="GtkLabel" id="ListResLabel">
+                                                  <property name="label"> Resolution : </property>
+                                                  <property name="width-chars">13</property>
+                                                  <property name="xalign">0.5</property>
+                                                  <style>
+                                                    <class name="heading"/>
+                                                  </style>
+                                                </object>
+                                              </child>
+                                              <child>
+                                                <object class="GtkComboBox" id="ListResBox">
+                                                  <property name="width_request">100</property>
+                                                </object>
+                                              </child>
+                                              <child>
+                                                <object class="GtkButton" id="ListDownloadButton">
+                                                  <property name="label">Download</property>
+                                                  <signal name="clicked" handler="On_List_Download"/>
+                                                  <style>
+                                                    <class name="Accept-Button"/>
+                                                    <class name="text-button"/>
+                                                  </style>
+                                                </object>
+                                              </child>
+                                            </object>
+                                          </child>
+                                          <child>
+                                            <object class="AdwPreferencesGroup" id="Playlist_Content_Group">
+                                            </object>
+                                          </child>
+                                        </object>
+                                      </property>
+                                    </object>
+                                  </property>
+                                </object>
+                              </child>
+                            </object>
+                          </child>
+                          <child>
+                            <object class="GtkRevealer" id="vid_revealer">
+                              <property name="transition-type">0</property>
+                              <property name="reveal-child">False</property>
+                              <child>
+                                <object class="GtkBox" id="mainVidView">
+                                  <property name="orientation">vertical</property>
+                                  <property name="spacing">20</property>
+                                  <property name="halign">center</property>
+                                  <property name="valign">center</property>
+                                  <property name="margin-start">40</property>
+                                  <property name="margin-end">40</property>
+                                  <property name="margin-bottom">10</property>
+                                  <child>
+                                    <object class="GtkBox">
+                                      <property name="margin-top">30</property>
+                                      <property name="halign">start</property>
+                                      <child>
+                                        <object class="GtkButton">
+                                          <property name="margin-start">20</property>
+                                          <property name="label">Go Back</property>
+                                          <signal name="clicked" handler="On_Go_Back"/>
+                                          <style>
+                                            <class name="Cancel-Button"/>
+                                            <class name="pill"/>
+                                          </style>
+                                        </object>
+                                      </child>
+                                    </object>
+                                  </child>
+                                  <child>
+                                    <object class="AdwStatusPage" id="VidDetails">
+                                      <property name="icon-name">applications-multimedia-symbolic</property>
+                                      <property name="title" translatable="yes"></property>
+                                      <property name="description" translatable="yes"></property>
+                                      <property name="vexpand">True</property>
+                                      <property name="hexpand">True</property>
+                                      <property name="height-request">400</property>
+                                      <child>
+                                        <object class="GtkBox">
+                                          <property name="spacing">10</property>
+                                          <property name="halign">center</property>
+                                          <style>
+                                            <class name="DownloadPrefBar"/>
+                                            <class name="card"/>
+                                            <class name="toolbar"/>
+                                            <class name="horizontal"/>
+                                          </style>
+                                          <child>
+                                            <object class="GtkLabel">
+                                              <property name="label">  Type : </property>
+                                              <style>
+                                                <class name="heading"/>
+                                              </style>
+                                            </object>
+                                          </child>
+                                          <child>
+                                            <object class="GtkComboBox" id="VidTypeBox">
+                                              <signal name="changed" handler="on_vid_type_change"/>
+                                            </object>
+                                          </child>
+                                          <child>
+                                            <object class="GtkLabel" id="VidResLabel">
+                                              <property name="label">Resolution : </property>
+                                              <property name="width-chars">13</property>
+                                              <property name="xalign">0.5</property>
+                                              <style>
+                                                <class name="heading"/>
+                                              </style>
+                                            </object>
+                                          </child>
+                                          <child>
+                                            <object class="GtkComboBox" id="VidResBox">
+                                              <signal name="changed" handler="size_label_handler"/>
+                                              <property name="width_request">100</property>
+                                              <style>
+                                                <class name="heading"/>
+                                              </style>
+                                            </object>
+                                          </child>
+                                          <child>
+                                            <object class="GtkLabel" id="VidSizeLabel">
+                                              <property name="label"></property>
+                                              <property name="width-chars">13</property>
+                                              <property name="xalign">0.5</property>
+                                              <style>
+                                                <class name="heading"/>
+                                              </style>
+                                            </object>
+                                          </child>
+                                          <child>
+                                            <object class="GtkButton" id="VidDownloadButton">
+                                              <property name="label">Download</property>
+                                              <signal name="clicked" handler="On_Vid_Download"/>
+                                              <style>
+                                                <class name="Accept-Button"/>
+                                                <class name="text-button"/>
+                                              </style>
+                                            </object>
+                                          </child>
+                                        </object>
+                                      </child>
+                                    </object>
+                                  </child>
+                                </object>
+                              </child>
+                            </object>
+                          </child>
+                          <child>
+                            <object class="GtkRevealer" id="done_revealer">
+                              <property name="margin-top">50</property>
+                              <property name="margin-bottom">50</property>
+                              <property name="margin-start">40</property>
+                              <property name="margin-end">40</property>
+                              <property name="transition-type">0</property>
+                              <property name="reveal-child">False</property>
+                              <child>
+                                <object class="AdwStatusPage">
+                                  <property name="icon-name">emblem-default-symbolic</property>
+                                  <property name="title" translatable="yes">Done!</property>
+                                  <property name="description" translatable="yes">Check The Task Manager</property>
+                                  <property name="vexpand">True</property>
+                                  <child>
+                                    <object class="GtkBox">
+                                      <property name="halign">center</property>
+                                      <child>
+                                        <object class="GtkButton">
+                                          <property name="label">Add Another Download</property>
+                                          <property name="width_request">110</property>
+                                          <signal name="clicked" handler="On_Go_Back"/>
+                                          <style>
+                                            <class name="pill"/>
+                                            <class name="Download-Button"/>
+                                          </style>
+                                        </object>
+                                      </child>
+                                    </object>
+                                  </child>
+                                </object>
+                              </child>
+                            </object>
+                          </child>
+                          <child>
+                            <object class="GtkRevealer" id="fail_revealer">
+                              <property name="margin-top">50</property>
+                              <property name="margin-bottom">50</property>
+                              <property name="margin-start">40</property>
+                              <property name="margin-end">40</property>
+                              <property name="transition-type">0</property>
+                              <property name="reveal-child">False</property>
+                              <child>
+                                <object class="AdwStatusPage">
+                                  <property name="icon-name">emblem-important-symbolic</property>
+                                  <property name="title" translatable="yes">Error!</property>
+                                  <property name="description" translatable="yes">Looks Like Something Bad Happened!</property>
+                                  <property name="vexpand">True</property>
+                                  <child>
+                                    <object class="GtkBox">
+                                      <property name="orientation">vertical</property>
+                                      <property name="halign">center</property>
+                                      <property name="spacing">20</property>
+                                      <property name="margin-top">20</property>
+                                      <child>
+                                        <object class="GtkButton">
+                                          <property name="label">Go Back</property>
+                                          <property name="width-request">100</property>
+                                          <signal name="clicked" handler="On_Go_Back"/>
+                                          <style>
+                                            <class name="Cancel-Button"/>
+                                            <class name="pill"/>
+                                          </style>
+                                        </object>
+                                      </child>
+                                      <child>
+                                        <object class="GtkLabel" id="Error_Label">
+                                          <property name="max_width_chars">60</property>
+                                          <property name="selectable">true</property>
+                                          <property name="ellipsize">3</property>
+                                        </object>
+                                      </child>
+                                    </object>
+                                  </child>
+                                </object>
+                              </child>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+                    </object>
+                  </property>
+                </object>
+              </child>
+              <child>
+                <object class="AdwViewStackPage" id="TaskManagerPage">
+                  <property name="name">task_manager</property>
+                  <property name="title">Task Manager</property>
+                  <property name="icon-name">edit-paste-symbolic</property>
+                  <property name="child">
+                    <object class="AdwCarousel">
+                      <property name="vexpand">True</property>
+                      <property name="hexpand">True</property>
+                      <property name="interactive">True</property>
+                      <property name="spacing">100</property>
+                      <child>
+                        <object class="GtkScrolledWindow">
+                          <property name="hexpand">True</property>
+                          <child>
+                            <object class="AdwClamp">
+                              <property name="maximum-size">1000</property>
+                              <property name="tightening-threshold">500</property>
+                              <property name="hexpand">True</property>
+                              <child>
+                                <object class="GtkBox">
+                                  <property name="hexpand">True</property>
+                                  <property name="orientation">vertical</property>
+                                  <property name="margin-bottom">36</property>
+                                  <child>
+                                    <object class="GtkLabel">
+                                      <property name="margin-top">36</property>
+                                      <property name="margin-bottom">36</property>
+                                      <property name="label">Downloads</property>
+                                      <style>
+                                        <class name="title"/>
+                                        <class name="title-1"/>
+                                      </style>
+                                    </object>
+                                  </child>
+                                  <child>
+                                    <object class="GtkBox" id="Downloads_List">
+                                      <property name="orientation">vertical</property>
+                                      <property name="margin-start">20</property>
+                                      <property name="margin-end">20</property>
+                                      <property name="spacing">15</property>
+                                    </object>
+                                      <!--child>
+                                        <object class="AdwPreferencesGroup" id="History_List">
+                                          <property name="title">History</property>
+                                        </object>
+                                      </child-->
+                                  </child>
+                                </object>
+                              </child>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+                    </object>
+                  </property>
+                </object>
+              </child>
+            </object>
+        </child>
+      </object>
+    </child>
+  </template>
+  <menu id="primary_menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Change Download Path</attribute>
+        <attribute name="action">app.DefaultLocation</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Keyboard Shortcuts</attribute>
+        <attribute name="action">win.show-help-overlay</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_About</attribute>
+        <attribute name="action">app.about</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>
+

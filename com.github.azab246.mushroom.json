@@ -1,0 +1,55 @@
+{
+    "app-id" : "com.github.azab246.mushroom",
+    "runtime" : "org.gnome.Platform",
+    "runtime-version" : "42",
+    "sdk" : "org.gnome.Sdk",
+    "command" : "mushroom",
+    "finish-args" : [
+        "--share=network",
+        "--share=ipc",
+        "--socket=fallback-x11",
+        "--device=dri",
+        "--socket=wayland"
+    ],
+    "cleanup" : [
+        "/include",
+        "/lib/pkgconfig",
+        "/man",
+        "/share/doc",
+        "/share/gtk-doc",
+        "/share/man",
+        "/share/pkgconfig",
+        "*.la",
+        "*.a"
+    ],
+    "modules" : [
+        {
+            "name" : "python3-pytube",
+            "buildsystem" : "simple",
+            "build-commands" : [
+                "pip3 install --prefix=${FLATPAK_DEST} ."
+            ],
+            "sources" : [
+                {
+                    "type" : "archive",
+                    "url" : "https://files.pythonhosted.org/packages/40/ea/5d78b3cc3d0d7615b62ffeb72fb04633c1ed3523a9bc47fd7ebccb20c2d4/pytube-12.1.0.tar.gz",
+                    "sha256" : "6de1f3a4cb125dd6ff912598c7e88a866325a63cc91755cae616f53c40ae5503"
+                }
+            ]
+        },
+        {
+            "name" : "mushroom",
+            "builddir" : true,
+            "buildsystem" : "meson",
+            "sources" : [
+                {
+                    "type" : "dir",
+                    "path" : "."
+                }
+            ]
+        }
+    ],
+    "build-options" : {
+        "env" : {        }
+    }
+}

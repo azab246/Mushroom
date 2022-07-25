@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/com/github/azab246/mushroom">
+    <file>gtk/window.ui</file>
+    <file>gtk/help-overlay.ui</file>
+    <file>res/style.css</file>
+    <file>res/Mushroom.svg</file>
+  </gresource>
+</gresources>
