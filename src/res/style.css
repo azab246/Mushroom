@@ -39,6 +39,16 @@
   background-color: #0C8C3D;
 }
 
+.Pause-Button {
+  color: white;
+  background-color: #eca306;
+}
+
+.Pause-Button:hover {
+  color: white;
+  background-color: #ffae00;
+}
+
 .Other {
   color: white;
   background-color: #7C2865;
