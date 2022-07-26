@@ -759,6 +759,7 @@ class DownloadsRow(Adw.ActionRow):
             print("Task: " + self.Name + " --Resumed")
         return
 
+
     def Cancel(self, button, *args):
         return
 
