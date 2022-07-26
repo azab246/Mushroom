@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from sre_constants import FAILURE
 import sys
 import gi
 
@@ -635,8 +636,11 @@ class DownloadsRow(Adw.ActionRow):
         super().__init__()
         # setting Some Values
         self.add_css_class("card")
+        self.Name = DName
         self.URL = DURL
         self.ID = DID
+        self.is_paused = False
+        self.is_cancelled = False
         # Setting MainBox
         self.MainBox = Gtk.Box()
         self.MainBox.set_hexpand(True)
@@ -654,14 +658,17 @@ class DownloadsRow(Adw.ActionRow):
         # setting InnerBox1
         self.InnerBox1 = Gtk.Box.new(orientation = 1, spacing = 10)
         self.InnerBox1.set_hexpand(True)
-        # setting InnerBox1
+        # setting InnerBox2
         self.InnerBox2 = Gtk.Box()
         self.InnerBox2.set_hexpand(True)
-        # setting InnerBox1
+        # setting InnerBox3
         self.InnerBox3 = Gtk.Box.new(orientation = 1, spacing = 0)
         self.InnerBox3.set_hexpand(True)
+        # setting ProgressBox
+        self.ProgressBox = Gtk.Box.new(orientation = 0, spacing = 0)
+        self.ProgressBox.set_hexpand(True)
         # setting Title
-        self.Title = Gtk.Label.new(DName)
+        self.Title = Gtk.Label.new(self.Name)
         self.Title.set_ellipsize(3)
         self.Title.set_max_width_chars(25)
         self.Title.set_xalign(0)
@@ -675,40 +682,88 @@ class DownloadsRow(Adw.ActionRow):
         self.Subtitle.set_max_width_chars(25)
         self.Subtitle.set_xalign(0)
         self.Subtitle.set_sensitive(False)
-        self.Subtitle.set_margin_top(3)
+        self.Subtitle.set_margin_top(5)
         # setting Buttons
         self.ButtonBox = Gtk.Box.new(orientation = 0, spacing = 10)
-        self.Stop = Gtk.Button.new_from_icon_name("media-playback-stop-symbolic")
-        self.Stop.add_css_class("Cancel-Button")
-        self.Pause = Gtk.Button.new_from_icon_name("media-playback-start-symbolic")
-        self.Pause.add_css_class("Download-Button")
-        self.ButtonBox.append(self.Stop)
-        self.ButtonBox.append(self.Pause)
+        self.StopButton = Gtk.Button.new_from_icon_name("media-playback-stop-symbolic")
+        self.StopButton.set_css_classes(["Cancel-Button"])
+        self.StopButton.connect("clicked", self.Cancel)
+        self.PauseButton = Gtk.Button.new_from_icon_name("media-playback-pause-symbolic")
+        self.PauseButton.set_sensitive(True)######
+        self.PauseButton.set_css_classes(["Pause-Button"])
+        self.PauseButton.connect("clicked", self.Pause)
+        self.ButtonBox.append(self.StopButton)
+        self.ButtonBox.append(self.PauseButton)
         # setting ProgressBar
         self.ProgressBar = Gtk.ProgressBar.new()
-
+        self.ProgressBar.set_hexpand(True)
+        self.ProgressBar.set_valign(3)
+        # setting ProgressLabel
+        self.ProgressLabel = Gtk.Label.new("Connecting")
+        self.ProgressLabel.set_css_classes(["dim-label", "caption"])
+        self.ProgressLabel.set_width_chars(12)
+        self.ProgressLabel.set_yalign(0.25)
         # structuring them
         self.MainBox.append(self.MainIcon)
         self.MainBox.append(self.InnerBox1)
         self.InnerBox1.append(self.InnerBox2)
-        self.InnerBox1.append(self.ProgressBar)
         self.InnerBox2.append(self.InnerBox3)
         self.InnerBox2.append(self.ButtonBox)
         self.InnerBox3.append(self.Title)
         self.InnerBox3.append(self.Subtitle)
+        self.ProgressBox.append(self.ProgressBar)
+        self.ProgressBox.append(self.ProgressLabel)
+        self.InnerBox1.append(self.ProgressBox)
         self.set_child(self.MainBox)
 
 
     def Download_Handler(self, *args):
+        self.Pause.set_sensitive(False)
+        try:
+            
+            yt = pytube.YouTube(self.URL)
+            stream = yt.streams.first()
+            filesize = stream.filesize  # get the video size
+            with open('', 'wb') as f:
+                stream = pytube.request.stream(stream.url) # get an iterable stream
+                downloaded = 0
+                while True:
+                    if self.is_cancelled:
+                        # handling cancelation
+                        break
+                    if not self.is_paused:
+                        chunk = next(stream, None) # get next chunk of video
+                        if chunk:
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            self.ProgressLabel.set_label(f"%{(downloaded / filesize)*100:.2f}")
+                        else:
+                            # no more data
+                            # handling success state
+                            break
+            print('done')
+        except Exception as e:
+            print(e)
+            # handling FAILURE
+        # changing states
+
+    def Pause(self, button, *args):
+        if button.get_icon_name() == "media-playback-pause-symbolic":
+            button.set_icon_name("media-playback-start-symbolic")
+            button.set_css_classes(["Download-Button"])
+            self.is_paused = True
+            print("Task: " + self.Name + " --Paused")
+        else:
+            button.set_icon_name("media-playback-pause-symbolic")
+            button.set_css_classes(["Pause-Button"])
+            self.is_paused = False
+            print("Task: " + self.Name + " --Resumed")
         return
 
-    def Pause(self, *args):
+    def Cancel(self, button, *args):
         return
 
     def Fail(self, *args):
-        return
-
-    def Cancel(self, *args):
         return
 
     def Done(self, *args):
