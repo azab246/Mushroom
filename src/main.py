@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from curses.ascii import isalpha, isdigit
 from sre_constants import FAILURE
 import sys
 import gi
@@ -190,12 +191,12 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.SizesV = []
             self.ResV = []
             self.ResA = []
-            for stream in self.vid.streams.filter(progressive = True, type = "video"):
+            for stream in self.vid.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
                 self.VidVidRes.append([f"{stream.resolution}"])
                 self.ResV.append(f"{stream.resolution}")
-                self.SizesV.append(stream.filesize)
+                self.SizesV.append(stream.filesize + self.vid.streams.filter(progressive = False, only_audio = True, file_extension='webm').last().filesize)
                 print(stream.resolution)
-            for stream in self.vid.streams.filter(type = "audio"):
+            for stream in self.vid.streams.filter(type = "audio", file_extension='webm'):
                 self.VidAuidRes.append([f"{stream.abr}"])
                 self.ResA.append(f"{stream.abr}")
                 self.SizesA.append(stream.filesize)
@@ -259,11 +260,11 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 print(i)
             self.ListNameLabel.set_label(self.plist.title)
             # setting combo boxes data
-            for stream in self.plist.videos[0].streams.filter(progressive = True, type = "video"):
+            for stream in self.plist.videos[0].streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
                 self.ListVidRes.append([f"{stream.resolution}"])
                 self.LResV.append(f"{stream.resolution}")
                 print(stream.resolution)
-            for stream in self.plist.videos[0].streams.filter(type = "audio"):
+            for stream in self.plist.videos[0].streams.filter(type = "audio", file_extension='webm'):
                 self.ListAuidRes.append([f"{stream.abr}"])
                 self.LResA.append(stream.abr)
                 print(stream.abr)
@@ -294,8 +295,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 self.loading = 0
                 self.Fail(err)
                 return
-
-
 
 
     def loading_func(self):
@@ -435,8 +434,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     if ListType == "Video":
                         ListRes = self.LResV[self.ListResBox.get_active()]
                         try:
-                            for stream in video.streams.filter(progressive = True, res = ListRes, type = "video"):
-                                Sizes.append(stream.filesize)
+                            for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
+                                Sizes.append(stream.filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='webm'))
                                 print(str(stream) + str("t1"))
                                 break
                             self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
@@ -444,8 +443,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
                             print("Failed To Get That Res Trying Another..")
                             try:
                                 ListRes = self.LResV[self.ListResBox.get_active() + 1]
-                                for stream in video.streams.filter(progressive = True, res = ListRes, type = "video"):
-                                    Sizes.append(stream.filesize)
+                                for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
+                                    Sizes.append(stream.filesize  + video.streams.filter(progressive = False, only_audio = True, file_extension='webm'))
                                     print(str(stream) + str("t2"))
                                     break
                                 self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
@@ -453,8 +452,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
                                 print("Failed To Get That Res Trying Another..")
                                 try:
                                     ListRes = self.LResV[self.ListResBox.get_active() - 1]
-                                    for stream in video.streams.filter(progressive = True, res = ListRes, type = "video"):
-                                        Sizes.append(stream.filesize)
+                                    for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
+                                        Sizes.append(stream.filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='webm'))
                                         print(str(stream) + str("t3"))
                                         break
                                     self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
@@ -465,21 +464,21 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     else:
                         try:
                             ListRes = self.LResA[self.ListResBox.get_active()]
-                            for stream in video.streams.filter(type = "audio", abr = ListRes):
+                            for stream in video.streams.filter(type = "audio", abr = ListRes , file_extension = "webm"):
                                 Sizes.append(stream.filesize)
                                 break
                             self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
                         except IndexError:
                             try:
                                 ListRes = self.LResA[self.ListResBox.get_active() + 1]
-                                for stream in video.streams.filter(type = "audio", abr = ListRes):
+                                for stream in video.streams.filter(type = "audio", abr = ListRes, file_extension = "webm"):
                                     Sizes.append(stream.filesize)
                                     break
                                 self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
                             except IndexError:
                                 try :
                                     ListRes = self.LResA[self.ListResBox.get_active() - 1]
-                                    for stream in video.streams.filter(type = "audio", abr = ListRes):
+                                    for stream in video.streams.filter(type = "audio", abr = ListRes, file_extension = "webm"):
                                         Sizes.append(stream.filesize)
                                         break
                                     self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
@@ -639,6 +638,9 @@ class DownloadsRow(Adw.ActionRow):
         self.Name = DName
         self.URL = DURL
         self.ID = DID
+        self.Type = DType
+        self.Loc = DLoc
+        self.Res = DRes
         self.is_paused = False
         self.is_cancelled = False
         # Setting MainBox
@@ -715,38 +717,136 @@ class DownloadsRow(Adw.ActionRow):
         self.ProgressBox.append(self.ProgressLabel)
         self.InnerBox1.append(self.ProgressBox)
         self.set_child(self.MainBox)
+        threading.Thread(target = self.Download_Handler, daemon = True).start()
+
 
 
     def Download_Handler(self, *args):
-        self.Pause.set_sensitive(False)
         try:
+            print(self.Name)
+            for i in range(len(self.Name)):
+                if not isalpha(self.Name[i]) and not isdigit(self.Name[i]):
+                    self.Name = self.Name[0:i] + '_' + self.Name[i+1:len(self.Name)]
+            print(self.Name)
             yt = pytube.YouTube(self.URL)
-            stream = yt.streams.first()
-            filesize = stream.filesize  # get the video size
-            with open('', 'wb') as f:
-                stream = pytube.request.stream(stream.url) # get an iterable stream
+            if self.Loc[len(self.Loc)-1] != "/":
+                self.Loc = self.Loc + "/"
+            print(1)
+            if self.Type == "Video":
+                stream = yt.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4', res= self.Res).first()
                 downloaded = 0
-                while True:
-                    if self.is_cancelled:
-                        # handling cancelation
-                        break
-                    if not self.is_paused:
-                        chunk = next(stream, None) # get next chunk of video
-                        if chunk:
-                            f.write(chunk)
-                            downloaded += len(chunk)
-                            self.ProgressLabel.set_label(f"%{(downloaded / filesize)*100:.2f}")
-                        else:
-                            # no more data
-                            # handling success state
+                print(21)
+                with open(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.download', 'wb') as f:
+                    streamX = pytube.request.stream(stream.url) # get an iterable stream
+                    sa = yt.streams.filter(only_audio = True, file_extension = "webm").last().filesize
+                    print(31)
+                    while True:
+                        if self.is_cancelled:
+                            # handling cancelation
                             break
+                        if not self.is_paused:
+                            chunk = next(streamX, None) # get next chunk of video
+                            if chunk:
+                                f.write(chunk)
+                                downloaded += len(chunk)
+                                self.ProgressLabel.set_label(f"%{(downloaded / stream.filesize + sa)*100:.2f}")
+                                self.ProgressBar.set_fraction(downloaded / stream.filesize + sa)
+                            else:
+                                # no more data
+                                break
+                    print(32)
+                    f.close()
+                print(33)
+                if self.is_cancelled:
+                    os.remove(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.download')
+                    self.Cancel()
+                    print(3555)
+                    return
+                else:
+                    print(34)
+                    with open(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.download', 'wb') as f:
+                        streamA = yt.streams.filter(only_audio = True, file_extension = "webm").last()
+                        streamA = pytube.request.stream(streamA.url)
+                        print(35)
+                        while True:
+                            if self.is_cancelled:
+                                # handling cancelation
+                                break
+                            if not self.is_paused:
+                                chunk = next(streamA, None) # get next chunk of video
+                                if chunk:
+                                    f.write(chunk)
+                                    downloaded += len(chunk)
+                                    self.ProgressLabel.set_label(f"%{(downloaded /( stream.filesize + sa))*100:.2f}")
+                                    self.ProgressBar.set_fraction(downloaded / (stream.filesize + sa))
+                                else:
+                                    # no more data
+                                    break
+                        print(36)
+                        f.close()
+                    if self.is_cancelled:
+                        os.remove(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.download')
+                        self.Cancel()
+                    else:
+                        print(37)
+                        self.ProgressLabel.set_label("Finishing")
+                        self.ProgressBar.pulse()
+                        AFname = f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.webm'
+                        VFname = f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.mp4'
+                        Fname = f'out.mp4'
+                        os.rename(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.download', AFname)
+                        os.rename(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.download', VFname)
+                        cmd = f"ffmpeg -i {VFname} -i {AFname} -c copy {Fname}"
+                        os.system(cmd)
+                        os.remove(AFname)
+                        os.remove(VFname)
+                        self.ProgressLabel.set_label("Done")
+                        self.ProgressBar.set_fraction(1)
+                        self.Done()
+                        print(38)
+            else:
+                stream = yt.streams.filter(type = "audio", abr = self.Res, file_extension = "webm").first()
+                downloaded = 0
+                with open(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}.download', 'wb') as f:
+                    stream = pytube.request.stream(stream.url) # get an iterable stream
+                    sa = yt.streams.filter(only_audio = True, type = "audio", abr = self.Res, file_extension = "webm").last().filesize
+                    while True:
+                        if self.is_cancelled:
+                            # handling cancelation
+                            break
+                        if not self.is_paused:
+                            chunk = next(stream, None) # get next chunk of video
+                            if chunk:
+                                f.write(chunk)
+                                downloaded += len(chunk)
+                                self.ProgressLabel.set_label(f"%{(downloaded / stream.filesize)*100:.2f}")
+                                self.ProgressBar.set_fraction(downloaded / stream.filesize)
+                            else:
+                                # no more data
+                                break
+                    f.close()
+                if self.is_cancelled:
+                    os.remove(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}.download')
+                    self.Cancel()
+                    return
+                else:
+                    self.ProgressLabel.set_label("Finishing")
+                    self.ProgressBar.set_pulse()
+                    Fname = f'{self.Loc}{self.Name}_{self.ID}_{self.Res}.webm'
+                    os.rename(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}.download', Fname)
+                    cmd = f'ffmpeg -i {Fname} -vn {Fname[0 : -4]}mp3'
+                    os.remove(Fname)
+                    self.ProgressLabel.set_label("Done")
+                    self.ProgressBar.set_fraction(1)
+                    self.Done()
             print('done')
+            return
         except Exception as e:
             print(e)
             # handling FAILURE
         # changing states
 
-
+    
     def Pause(self, button, *args):
         if button.get_icon_name() == "media-playback-pause-symbolic":
             button.set_icon_name("media-playback-start-symbolic")
