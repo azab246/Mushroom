@@ -746,28 +746,32 @@ class DownloadsRow(Adw.ActionRow):
             # handling FAILURE
         # changing states
 
+
     def Pause(self, button, *args):
         if button.get_icon_name() == "media-playback-pause-symbolic":
             button.set_icon_name("media-playback-start-symbolic")
             button.set_css_classes(["Download-Button"])
             self.is_paused = True
-            print("Task: " + self.Name + " --Paused")
+            print("Task: " + self.Name + f" ( {self.ID} )" + " --Paused")
         else:
             button.set_icon_name("media-playback-pause-symbolic")
             button.set_css_classes(["Pause-Button"])
             self.is_paused = False
-            print("Task: " + self.Name + " --Resumed")
+            print("Task: " + self.Name + f" ( {self.ID} )" + " --Resumed")
         return
 
 
     def Cancel(self, button, *args):
         return
 
+
     def Fail(self, *args):
         return
 
+
     def Done(self, *args):
         return
+
 
     def Destroy(self, *args):
         return
