@@ -720,7 +720,6 @@ class DownloadsRow(Adw.ActionRow):
     def Download_Handler(self, *args):
         self.Pause.set_sensitive(False)
         try:
-            
             yt = pytube.YouTube(self.URL)
             stream = yt.streams.first()
             filesize = stream.filesize  # get the video size
