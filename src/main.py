@@ -1078,8 +1078,8 @@ class MushroomApplication(Adw.Application):
         if os.path.isdir(path):
             if f'/home/{GLib.get_user_name()}/' in path[0:len(GLib.get_user_name())+7]:
                 with open(DefaultLocFileDir, 'w') as f:
-                    f.write(self.DefaultLocEntry.get_text())
-                DefaultLocPATH = self.DefaultLocEntry.get_text()
+                    f.write(path)
+                DefaultLocPATH = path
                 self.DefaultLocation.close()
                 print("Successfully Set To " + DefaultLocPATH)
             else:
