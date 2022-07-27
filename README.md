@@ -19,3 +19,7 @@ an Elegant Youtube Video Downloader Based On [Pytube](https://github.com/pytube/
 <br><br><br>
 ## Still Under Development
 <br><br>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 43efcb38546ad490add924401ecf22e47e1e36a7
