@@ -1073,9 +1073,6 @@ class MushroomApplication(Adw.Application):
             return
         if path[0] != '/':
             path = '/' + path
-        print(path)
-        print(path[0:len(GLib.get_user_name())+7])
-        print(f'/home/{GLib.get_user_name()}/')
         if os.path.isdir(path):
             if f'/home/{GLib.get_user_name()}/' in path[0:len(GLib.get_user_name())+7]:
                 with open(DefaultLocFileDir, 'w') as f:
