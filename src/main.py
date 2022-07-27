@@ -793,7 +793,7 @@ class DownloadsRow(Adw.ActionRow):
                         self.ProgressBar.pulse()
                         AFname = f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.webm'
                         VFname = f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.mp4'
-                        Fname = f'out.mp4'
+                        Fname = f'{self.Loc}{self.Name}_{self.ID}_{self.Res}.mp4'
                         os.rename(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.download', AFname)
                         os.rename(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.download', VFname)
                         cmd = f"ffmpeg -i {VFname} -i {AFname} -c copy {Fname}"
