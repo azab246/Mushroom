@@ -777,7 +777,7 @@ class DownloadsRow(Adw.ActionRow):
                                 if chunk:
                                     f.write(chunk)
                                     downloaded += len(chunk)
-                                    self.ProgressLabel.set_label(f"%{(downloaded /( stream.filesize + sa))*100:.2f}")
+                                    self.ProgressLabel.set_label(f"%{(downloaded / (stream.filesize + sa))*100:.2f}")
                                     self.ProgressBar.set_fraction(downloaded / (stream.filesize + sa))
                                 else:
                                     # no more data
@@ -791,12 +791,12 @@ class DownloadsRow(Adw.ActionRow):
                         print(37)
                         self.ProgressLabel.set_label("Finishing")
                         self.ProgressBar.pulse()
-                        AFname = f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.webm'
-                        VFname = f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.mp4'
-                        Fname = f'{self.Loc}{self.Name}_{self.ID}_{self.Res}.mp4'
-                        os.rename(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.download', AFname)
-                        os.rename(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.download', VFname)
-                        cmd = f"ffmpeg -i {VFname} -i {AFname} -c:v copy -c:a aac {Fname}"
+                        AFname = f"{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.webm"
+                        VFname = f"{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.mp4"
+                        Fname = f"{self.Loc}{self.Name}_{self.ID}_{self.Res}.mp4"
+                        os.rename(f"{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.download", AFname)
+                        os.rename(f"{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.download", VFname)
+                        cmd = f'GREPDB="ffmpeg -i {VFname} -i {AFname} -c:v copy -c:a aac {Fname}"; /bin/bash -c "$GREPDB"'
                         os.system(cmd)
                         os.remove(AFname)
                         os.remove(VFname)
