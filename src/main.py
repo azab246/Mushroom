@@ -463,7 +463,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     def On_List_DownloadFunc(self):
         # Check For No Selection
-        try:
+        #try:
             unselected = 0
             for row in rows:
                 if row.check.get_active() == False:
@@ -498,7 +498,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                         ListRes = self.LResV[self.ListResBox.get_active()]
                         try:
                             for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
-                                Sizes.append(stream.filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='webm'))
+                                Sizes.append(stream.filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='webm').last())
                                 print(str(stream) + str("t1"))
                                 break
                             self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
@@ -507,7 +507,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                             try:
                                 ListRes = self.LResV[self.ListResBox.get_active() + 1]
                                 for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
-                                    Sizes.append(stream.filesize  + video.streams.filter(progressive = False, only_audio = True, file_extension='webm'))
+                                    Sizes.append(stream.filesize  + video.streams.filter(progressive = False, only_audio = True, file_extension='webm').last())
                                     print(str(stream) + str("t2"))
                                     break
                                 self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
@@ -516,7 +516,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                                 try:
                                     ListRes = self.LResV[self.ListResBox.get_active() - 1]
                                     for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
-                                        Sizes.append(stream.filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='webm'))
+                                        Sizes.append(stream.filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='webm').last())
                                         print(str(stream) + str("t3"))
                                         break
                                     self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
@@ -556,11 +556,11 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.loading_revealer.set_reveal_child(False)
             self.done_revealer.set_reveal_child(True)
             self.Carousel.scroll_to(self.done_revealer, True)
-        except Exception as err:
-            if err:
-                self.loading = 0
-                self.Fail(err)
-                return
+        #except Exception as err:
+           # if err:
+               # self.loading = 0
+                #self.Fail(err)
+               # return
 
 
 
