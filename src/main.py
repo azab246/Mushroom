@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from curses.ascii import isalpha, isdigit
+from genericpath import isfile
 from sre_constants import FAILURE
 import sys
 import gi
@@ -33,6 +34,10 @@ import datetime as d
 import html
 import urllib
 import os
+import subprocess
+import tarfile
+from shutil import rmtree, move
+
 
 
 
@@ -76,12 +81,16 @@ class MushroomWindow(Gtk.ApplicationWindow):
         global DefaultLocFileDir
         global DefaultLocPATH
         global cache_dir
+        global data_dir
+        global ffmpeg
+        global DownloadCacheDir
         self.isactivetoast = False
         cache_dir = GLib.get_user_cache_dir()
-        self.MainBuffer.connect("inserted_text", self.islistq)
-        self.MainBuffer.connect("deleted_text", self.islistq)
-        self.Download_Rows = {}
+        data_dir = GLib.get_user_data_dir()
         DefaultLocFileDir = GLib.get_user_cache_dir() + "/tmp/DefaultDownloadLoc"
+        ffmpeg = f'{data_dir}/ffmpeg'
+        DownloadCacheDir = cache_dir + '/DownloadsCache/'
+        # Database + DLoc File
         conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
         db = conn.cursor()
         db.execute('''
@@ -102,10 +111,60 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 f.write(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD))
                 DefaultLocPATH = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)
                 f.close()
+        self.MainBuffer.connect("inserted_text", self.islistq)
+        self.MainBuffer.connect("deleted_text", self.islistq)
+        self.Download_Rows = {}
+        threading.Thread(target = self.AppData_Initialization, daemon = True).start()
         threading.Thread(target = self.UpdateDownloads, daemon = True).start()
+        
 
 
+    def AppData_Initialization(self, *args):
+        # Download cache Folder on /chache
+        if not os.path.isdir(cache_dir + '/DownloadsCache'):
+            os.mkdir(cache_dir + '/DownloadsCache')
+        else:
+            #if path exists cleaning it
+            for file in os.scandir(cache_dir + '/DownloadsCache'):
+                os.remove(file.path)
 
+
+        # FFMPEG arch check and Download on /data
+        if not os.path.isfile(ffmpeg):
+            NoneToast = Adw.Toast.new("Downloading ffmpeg ~41MB, You Will Be Able To Use The App oOnce We Finish This")
+            self.MainEntry.set_sensitive(False)
+            NoneToast.set_timeout(5)
+            print("Downloading ffmpeg ~41MB, This Should be Done At The First Time of Running The App")
+            print("Cant Find ffmpeg, Trying To Download it from https://johnvansickle.com/ffmpeg/builds/")
+            co = subprocess.check_output('uname -m', shell=True).decode('utf-8')
+            if "x86_64" in co :
+                print('x86_64 arch found')
+                URL = "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz"
+            elif 'i686' in co :
+                print('i686 arch found')
+                URL = "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-i686-static.tar.xz"
+            elif 'aarch64' in co :
+                print('aarch64 arch found')
+                URL = "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-arm64-static.tar.xz"
+            else:
+                print('Unsupported arch')
+                self.Fail("Sorry, Your Device is not Supported for ffmpeg, only x86_64, i686, aarch64 are supported")
+                print("Sorry, Your CPU arch is not Supported for ffmpeg, only x86_64, i686, aarch64 are supported")
+                return
+            urllib.request.urlretrieve(URL, f"{data_dir}/ffmpeg.download")
+            os.rename(f"{data_dir}/ffmpeg.download", f"{data_dir}/ffmpeg.tar.xz")  
+            downloaded = tarfile.open(f"{data_dir}/ffmpeg.tar.xz")
+            downloaded.extractall(f"{data_dir}/ffmpegdir")
+            co = subprocess.check_output(f'ls {data_dir}/ffmpegdir/', shell=True).decode('utf-8')
+            print(co)
+            os.remove(f"{data_dir}/ffmpeg.tar.xz")
+            os.rename(f"{data_dir}/ffmpegdir/{co[0:-1]}/ffmpeg", f'{data_dir}/ffmpeg')
+            rmtree(f"{data_dir}/ffmpegdir")
+            NoneToast = Adw.Toast.new("ffmpeg Downloaded Successfully!")
+            self.MainEntry.set_sensitive(True)
+            NoneToast.set_timeout(5)
+            threading.Thread(target = self.UpdateDownloads, daemon = True).start()
+        return
 
 
     def time_format(self, sec):
@@ -132,7 +191,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
 
     def AddToTasksDB(self, url, res, dtype, size, name):
-        cache_dir = GLib.get_user_cache_dir()
         fsize = self.size_format(size)
         dt = d.datetime.now().strftime("%d/%m/%Y %H:%M")
         conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
@@ -151,19 +209,20 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
 
     def UpdateDownloads(self, *args):
-        conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-        self.db = conn.cursor()
-        queue = self.db.execute("SELECT * FROM Downloads")
-        for video in queue:
-            #print(video)
-            #print(video[7])
-            #print(list(self.Download_Rows.keys()))
-            if str(video[7]) not in list(self.Download_Rows.keys()):
-                print("Adding To Downloads List : " + video[6] + f"  ( {video[2]} )")
-                self.Download_Rows[str(video[7])] = DownloadsRow(video[0], video[1], video[2], video[3], video[4], video[5], video[6], video[7])
-                self.Downloads_List.prepend(self.Download_Rows[str(video[7])])
-                self.TaskManagerPage.set_needs_attention(True)
-        conn.close()
+        if os.path.isfile(ffmpeg):
+            conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
+            self.db = conn.cursor()
+            queue = self.db.execute("SELECT * FROM Downloads")
+            for video in queue:
+                #print(video)
+                #print(video[7])
+                #print(list(self.Download_Rows.keys()))
+                if str(video[7]) not in list(self.Download_Rows.keys()):
+                    print("Adding To Downloads List : " + video[6] + f"  ( {video[2]} )")
+                    self.Download_Rows[str(video[7])] = DownloadsRow(video[0], video[1], video[2], video[3], video[4], video[5], video[6], video[7])
+                    self.Downloads_List.prepend(self.Download_Rows[str(video[7])])
+                    self.TaskManagerPage.set_needs_attention(True)
+            conn.close()
 
 
 
@@ -318,32 +377,33 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
 
     def islistq(self, *args):
-        # if a vid related to a list
-        if re.findall(".*youtube\.com/watch\?v\=.{11}&list\=.{34}.*", self.MainBuffer.get_text()) or re.findall(".*youtu\.be/.{11}\?list\=.{34}.*", self.MainBuffer.get_text()):
-            self.SubmitButton.set_label("Download Video")
-            self.ListSuggestionRevealer.set_reveal_child(True)
-            self.SubmitButton.set_sensitive(True)
-            print("a vid related to a list")
-            return 0
-        # if a playlist
-        elif re.findall(".*youtube\.com/playlist\?list\=.{34}.*", self.MainBuffer.get_text()):
-            self.SubmitButton.set_label("Download Playlist")
-            self.ListSuggestionRevealer.set_reveal_child(False)
-            self.SubmitButton.set_sensitive(True)
-            print("playlist")
-            return 1
-        # if a plain vid
-        elif re.findall(".*youtube\.com/watch\?v\=.{11}.*", self.MainBuffer.get_text()) or re.findall(".*youtu\.be\/.{11}.*", self.MainBuffer.get_text()) and not (re.findall(".*youtube\.com/watch\?v\=.{11}&list\=.{34}.*", self.MainBuffer.get_text()) or re.findall(".*youtu.be/.{11}\?list\=.{34}.*", self.MainBuffer.get_text())):
-            self.ListSuggestionRevealer.set_reveal_child(False)
-            self.SubmitButton.set_sensitive(True)
-            self.SubmitButton.set_label("Download Video")
-            print("plain vid")
-            return 2
-        else:
-            self.ListSuggestionRevealer.set_reveal_child(False)
-            self.SubmitButton.set_sensitive(False)
-            print("invalid url")
-            return 3
+        if os.path.isfile(ffmpeg):
+            # if a vid related to a list
+            if re.findall(".*youtube\.com/watch\?v\=.{11}&list\=.{34}.*", self.MainBuffer.get_text()) or re.findall(".*youtu\.be/.{11}\?list\=.{34}.*", self.MainBuffer.get_text()):
+                self.SubmitButton.set_label("Download Video")
+                self.ListSuggestionRevealer.set_reveal_child(True)
+                self.SubmitButton.set_sensitive(True)
+                print("a vid related to a list")
+                return 0
+            # if a playlist
+            elif re.findall(".*youtube\.com/playlist\?list\=.{34}.*", self.MainBuffer.get_text()):
+                self.SubmitButton.set_label("Download Playlist")
+                self.ListSuggestionRevealer.set_reveal_child(False)
+                self.SubmitButton.set_sensitive(True)
+                print("playlist")
+                return 1
+            # if a plain vid
+            elif re.findall(".*youtube\.com/watch\?v\=.{11}.*", self.MainBuffer.get_text()) or re.findall(".*youtu\.be\/.{11}.*", self.MainBuffer.get_text()) and not (re.findall(".*youtube\.com/watch\?v\=.{11}&list\=.{34}.*", self.MainBuffer.get_text()) or re.findall(".*youtu.be/.{11}\?list\=.{34}.*", self.MainBuffer.get_text())):
+                self.ListSuggestionRevealer.set_reveal_child(False)
+                self.SubmitButton.set_sensitive(True)
+                self.SubmitButton.set_label("Download Video")
+                print("plain vid")
+                return 2
+            else:
+                self.ListSuggestionRevealer.set_reveal_child(False)
+                self.SubmitButton.set_sensitive(False)
+                print("invalid url")
+                return 3
 
 
 
@@ -504,22 +564,23 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def Submit_Func(self, button):
-        if self.islistq() == 1:
-            self.MainRevealer.set_reveal_child(False)
-            self.loading_revealer.set_reveal_child(True)
-            self.Carousel.scroll_to(self.loading_revealer, True)
-            self.loading = 1
-            threading.Thread(target = self.loading_func, daemon = True).start()
-            threading.Thread(target = self.Playlist_Data, daemon = True).start()
-            print("022")
-        elif self.islistq() == 2:
-            self.MainRevealer.set_reveal_child(False)
-            self.loading_revealer.set_reveal_child(True)
-            self.Carousel.scroll_to(self.loading_revealer, True)
-            self.loading = 1
-            threading.Thread(target = self.loading_func, daemon=True).start()
-            threading.Thread(target = self.Video_Data, daemon=True).start()
-            print("023")
+        if os.path.isfile(ffmpeg):
+            if self.islistq() == 1:
+                self.MainRevealer.set_reveal_child(False)
+                self.loading_revealer.set_reveal_child(True)
+                self.Carousel.scroll_to(self.loading_revealer, True)
+                self.loading = 1
+                threading.Thread(target = self.loading_func, daemon = True).start()
+                threading.Thread(target = self.Playlist_Data, daemon = True).start()
+                print("022")
+            elif self.islistq() == 2:
+                self.MainRevealer.set_reveal_child(False)
+                self.loading_revealer.set_reveal_child(True)
+                self.Carousel.scroll_to(self.loading_revealer, True)
+                self.loading = 1
+                threading.Thread(target = self.loading_func, daemon=True).start()
+                threading.Thread(target = self.Video_Data, daemon=True).start()
+                print("023")
 
     @Gtk.Template.Callback()
     def on_vid_type_change(self, combo):
@@ -723,124 +784,135 @@ class DownloadsRow(Adw.ActionRow):
 
     def Download_Handler(self, *args):
         try:
-            print(self.Name)
-            for i in range(len(self.Name)):
-                if not isalpha(self.Name[i]) and not isdigit(self.Name[i]):
-                    self.Name = self.Name[0:i] + '_' + self.Name[i+1:len(self.Name)]
-            print(self.Name)
-            yt = pytube.YouTube(self.URL)
-            if self.Loc[len(self.Loc)-1] != "/":
-                self.Loc = self.Loc + "/"
-            print(1)
-            if self.Type == "Video":
-                stream = yt.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4', res= self.Res).first()
-                downloaded = 0
-                print(21)
-                with open(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.download', 'wb') as f:
-                    streamX = pytube.request.stream(stream.url) # get an iterable stream
-                    sa = yt.streams.filter(only_audio = True, file_extension = "webm").last().filesize
-                    print(31)
-                    while True:
-                        if self.is_cancelled:
-                            # handling cancelation
-                            break
-                        if not self.is_paused:
-                            chunk = next(streamX, None) # get next chunk of video
-                            if chunk:
-                                f.write(chunk)
-                                downloaded += len(chunk)
-                                self.ProgressLabel.set_label(f"%{(downloaded / stream.filesize + sa)*100:.2f}")
-                                self.ProgressBar.set_fraction(downloaded / stream.filesize + sa)
-                            else:
-                                # no more data
-                                break
-                    print(32)
-                    f.close()
-                print(33)
-                if self.is_cancelled:
-                    os.remove(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.download')
-                    self.Cancel()
-                    print(3555)
-                    return
-                else:
-                    print(34)
-                    with open(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.download', 'wb') as f:
-                        streamA = yt.streams.filter(only_audio = True, file_extension = "webm").last()
-                        streamA = pytube.request.stream(streamA.url)
-                        print(35)
+            if os.path.isfile(data_dir + '/ffmpeg'):
+                print(self.Name)
+                for i in range(len(self.Name)):
+                    if not isalpha(self.Name[i]) and not isdigit(self.Name[i]):
+                        self.Name = self.Name[0:i] + '_' + self.Name[i+1:len(self.Name)]
+                print(self.Name)
+                yt = pytube.YouTube(self.URL)
+                if self.Loc[len(self.Loc)-1] != "/":
+                    self.Loc = self.Loc + "/"
+                print(1)
+                NIR = f'{self.Name}_{self.ID}_{self.Res}'
+                if self.Type == "Video":
+                    stream = yt.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4', res= self.Res).first()
+                    downloaded = 0
+                    print(21)
+                    with open(f'{DownloadCacheDir}{NIR}_VF.download', 'wb') as f:
+                        streamX = pytube.request.stream(stream.url) # get an iterable stream
+                        sa = yt.streams.filter(only_audio = True, file_extension = "webm").last().filesize
+                        print(31)
                         while True:
                             if self.is_cancelled:
                                 # handling cancelation
                                 break
                             if not self.is_paused:
-                                chunk = next(streamA, None) # get next chunk of video
+                                chunk = next(streamX, None) # get next chunk of video
                                 if chunk:
                                     f.write(chunk)
                                     downloaded += len(chunk)
-                                    self.ProgressLabel.set_label(f"%{(downloaded / (stream.filesize + sa))*100:.2f}")
-                                    self.ProgressBar.set_fraction(downloaded / (stream.filesize + sa))
+                                    self.ProgressLabel.set_label(f"%{(downloaded / stream.filesize + sa)*100:.2f}")
+                                    self.ProgressBar.set_fraction(downloaded / stream.filesize + sa)
                                 else:
                                     # no more data
                                     break
-                        print(36)
+                        print(32)
+                        f.close()
+                    print(33)
+                    if self.is_cancelled:
+                        os.remove(f'{DownloadCacheDir}{NIR}_VF.download')
+                        #self.Cancel()
+                        print(3555)
+                        return
+                    else:
+                        print(34)
+                        with open(f'{DownloadCacheDir}{NIR}_AF.download', 'wb') as f:
+                            streamA = yt.streams.filter(only_audio = True, file_extension = "webm").last()
+                            streamA = pytube.request.stream(streamA.url)
+                            print(35)
+                            while True:
+                                if self.is_cancelled:
+                                    # handling cancelation
+                                    break
+                                if not self.is_paused:
+                                    chunk = next(streamA, None) # get next chunk of video
+                                    if chunk:
+                                        f.write(chunk)
+                                        downloaded += len(chunk)
+                                        self.ProgressLabel.set_label(f"%{(downloaded / (stream.filesize + sa))*100:.2f}")
+                                        self.ProgressBar.set_fraction(downloaded / (stream.filesize + sa))
+                                    else:
+                                        # no more data
+                                        break
+                            print(36)
+                            f.close()
+                        if self.is_cancelled:
+                            os.remove(f'{DownloadCacheDir}{NIR}_AF.download')
+                            #self.Cancel()
+                        else:
+                            print(37)
+                            self.ProgressLabel.set_label("Finishing")
+                            self.ProgressBar.pulse()
+                            AFname = f"{DownloadCacheDir}{NIR}_AF.webm"
+                            VFname = f"{DownloadCacheDir}{NIR}_VF.mp4"
+                            Fname = f"{DownloadCacheDir}{NIR}.mp4"
+                            os.rename(f"{DownloadCacheDir}{NIR}_AF.download", AFname)
+                            os.rename(f"{DownloadCacheDir}{NIR}_VF.download", VFname)
+                            cmd = f'{ffmpeg} -i {VFname} -i {AFname} -c:v copy -c:a aac {Fname}'
+                            subprocess.run(cmd, shell = True)
+                            os.remove(AFname)
+                            os.remove(VFname)
+                            move(Fname, f"{self.Loc}{NIR}.mp4")
+                            self.ProgressLabel.set_label("Done")
+                            self.ProgressBar.set_fraction(1)
+                            self.Done()
+                            print(38)
+                else:
+                    streamV = yt.streams.filter(type = "audio", abr = self.Res, file_extension = "webm").first()
+                    downloaded = 0
+                    with open(f'{DownloadCacheDir}{NIR}.download', 'wb') as f:
+                        stream = pytube.request.stream(streamV.url) # get an iterable stream
+                        while True:
+                            if self.is_cancelled:
+                                # handling cancelation
+                                break
+                            if not self.is_paused:
+                                chunk = next(stream, None) # get next chunk of video
+                                if chunk:
+                                    f.write(chunk)
+                                    downloaded += len(chunk)
+                                    self.ProgressLabel.set_label(f"%{(downloaded / streamV.filesize)*100:.2f}")
+                                    self.ProgressBar.set_fraction(downloaded / streamV.filesize)
+                                else:
+                                    # no more data
+                                    break
                         f.close()
                     if self.is_cancelled:
-                        os.remove(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.download')
-                        self.Cancel()
+                        os.remove(f'{DownloadCacheDir}{NIR}.download')
+                        #self.Cancel()
+                        return
                     else:
-                        print(37)
                         self.ProgressLabel.set_label("Finishing")
                         self.ProgressBar.pulse()
-                        AFname = f"{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.webm"
-                        VFname = f"{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.mp4"
-                        Fname = f"{self.Loc}{self.Name}_{self.ID}_{self.Res}.mp4"
-                        os.rename(f"{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.download", AFname)
-                        os.rename(f"{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.download", VFname)
-                        cmd = f'GREPDB="ffmpeg -i {VFname} -i {AFname} -c:v copy -c:a aac {Fname}"; /bin/bash -c "$GREPDB"'
-                        os.system(cmd)
-                        os.remove(AFname)
-                        os.remove(VFname)
+                        #print(1)
+                        Fname = f'{DownloadCacheDir}{NIR}.webm'
+                        #print(2)
+                        os.rename(f'{DownloadCacheDir}{NIR}.download', Fname)
+                        #print(3)
+                        cmd = f'{ffmpeg} -i {Fname} -vn {Fname[0 : -4]}mp3'
+                        subprocess.run(cmd, shell = True)
+                        os.remove(Fname)
+                        move(f'{Fname[0 : -4]}mp3', f'{self.Loc}{NIR}.mp3')
+                        #print(1)
                         self.ProgressLabel.set_label("Done")
                         self.ProgressBar.set_fraction(1)
                         self.Done()
-                        print(38)
+                print('done')
+                return
             else:
-                stream = yt.streams.filter(type = "audio", abr = self.Res, file_extension = "webm").first()
-                downloaded = 0
-                with open(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}.download', 'wb') as f:
-                    stream = pytube.request.stream(stream.url) # get an iterable stream
-                    sa = yt.streams.filter(only_audio = True, type = "audio", abr = self.Res, file_extension = "webm").last().filesize
-                    while True:
-                        if self.is_cancelled:
-                            # handling cancelation
-                            break
-                        if not self.is_paused:
-                            chunk = next(stream, None) # get next chunk of video
-                            if chunk:
-                                f.write(chunk)
-                                downloaded += len(chunk)
-                                self.ProgressLabel.set_label(f"%{(downloaded / stream.filesize)*100:.2f}")
-                                self.ProgressBar.set_fraction(downloaded / stream.filesize)
-                            else:
-                                # no more data
-                                break
-                    f.close()
-                if self.is_cancelled:
-                    os.remove(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}.download')
-                    self.Cancel()
-                    return
-                else:
-                    self.ProgressLabel.set_label("Finishing")
-                    self.ProgressBar.set_pulse()
-                    Fname = f'{self.Loc}{self.Name}_{self.ID}_{self.Res}.webm'
-                    os.rename(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}.download', Fname)
-                    cmd = f'ffmpeg -i {Fname} -vn {Fname[0 : -4]}mp3'
-                    os.remove(Fname)
-                    self.ProgressLabel.set_label("Done")
-                    self.ProgressBar.set_fraction(1)
-                    self.Done()
-            print('done')
-            return
+                self.ProgressLabel.set_label("  Unable to find ffmpeg")
+                #self.Cancel()
         except Exception as e:
             print(e)
             # handling FAILURE
