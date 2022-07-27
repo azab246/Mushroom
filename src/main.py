@@ -40,7 +40,6 @@ from shutil import rmtree, move
 
 
 
-
 @Gtk.Template(resource_path='/com/github/azab246/mushroom/gtk/window.ui')
 class MushroomWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'MushroomWindow'
