@@ -134,6 +134,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             NoneToast = Adw.Toast.new("Downloading ffmpeg ~41MB, You Will Be Able To Use The App oOnce We Finish This")
             self.MainEntry.set_sensitive(False)
             NoneToast.set_timeout(5)
+            self.MainToastOverlay.add_toast(NoneToast)
             print("Downloading ffmpeg ~41MB, This Should be Done At The First Time of Running The App")
             print("Cant Find ffmpeg, Trying To Download it from https://johnvansickle.com/ffmpeg/builds/")
             co = subprocess.check_output('uname -m', shell=True).decode('utf-8')
@@ -163,7 +164,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             NoneToast = Adw.Toast.new("ffmpeg Downloaded Successfully!")
             self.MainEntry.set_sensitive(True)
             NoneToast.set_timeout(5)
-            threading.Thread(target = self.UpdateDownloads, daemon = True).start()
+            self.MainToastOverlay.add_toast(NoneToast)
         return
 
 
@@ -251,15 +252,17 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.ResV = []
             self.ResA = []
             for stream in self.vid.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
-                self.VidVidRes.append([f"{stream.resolution}"])
-                self.ResV.append(f"{stream.resolution}")
-                self.SizesV.append(stream.filesize + self.vid.streams.filter(progressive = False, only_audio = True, file_extension='webm').last().filesize)
-                print(stream.resolution)
+                if f"{stream.resolution}" not in self.ResV:
+                    self.VidVidRes.append([f"{stream.resolution}"])
+                    self.ResV.append(f"{stream.resolution}")
+                    self.SizesV.append(stream.filesize + self.vid.streams.filter(progressive = False, only_audio = True, file_extension='webm').last().filesize)
+                    print(stream.resolution)
             for stream in self.vid.streams.filter(type = "audio", file_extension='webm'):
-                self.VidAuidRes.append([f"{stream.abr}"])
-                self.ResA.append(f"{stream.abr}")
-                self.SizesA.append(stream.filesize)
-                print(stream.abr)
+                if f"{stream.abr}" not in self.ResA:
+                    self.VidAuidRes.append([f"{stream.abr}"])
+                    self.ResA.append(f"{stream.abr}")
+                    self.SizesA.append(stream.filesize)
+                    print(stream.abr)
             self.VidTypeList.append(['Video'])
             self.VidTypeList.append(['Audio'])
             print('70%')
@@ -320,13 +323,15 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.ListNameLabel.set_label(self.plist.title)
             # setting combo boxes data
             for stream in self.plist.videos[0].streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
-                self.ListVidRes.append([f"{stream.resolution}"])
-                self.LResV.append(f"{stream.resolution}")
-                print(stream.resolution)
+                if f"{stream.resolution}" not in self.LResV:
+                    self.ListVidRes.append([f"{stream.resolution}"])
+                    self.LResV.append(f"{stream.resolution}")
+                    print(stream.resolution)
             for stream in self.plist.videos[0].streams.filter(type = "audio", file_extension='webm'):
-                self.ListAuidRes.append([f"{stream.abr}"])
-                self.LResA.append(stream.abr)
-                print(stream.abr)
+                if f'{stream.abr}' not in self.LResA:
+                    self.ListAuidRes.append([f"{stream.abr}"])
+                    self.LResA.append(f'{stream.abr}')
+                    print(stream.abr)
             self.ListTypeList.append(['Video'])
             self.ListTypeList.append(['Audio'])
             # cell R
@@ -695,6 +700,7 @@ class DownloadsRow(Adw.ActionRow):
     def __init__(self, DURL, DRes , DType, DLoc, DAddedOn, DSize, DName, DID):
         super().__init__()
         # setting Some Values
+        self.ispulse = False
         self.add_css_class("card")
         self.Name = DName
         self.URL = DURL
@@ -761,6 +767,7 @@ class DownloadsRow(Adw.ActionRow):
         self.ProgressBar = Gtk.ProgressBar.new()
         self.ProgressBar.set_hexpand(True)
         self.ProgressBar.set_valign(3)
+        self.ProgressBar.set_pulse_step(0.5)
         # setting ProgressLabel
         self.ProgressLabel = Gtk.Label.new("Connecting")
         self.ProgressLabel.set_css_classes(["dim-label", "caption"])
@@ -812,8 +819,11 @@ class DownloadsRow(Adw.ActionRow):
                                 if chunk:
                                     f.write(chunk)
                                     downloaded += len(chunk)
-                                    self.ProgressLabel.set_label(f"%{(downloaded / stream.filesize + sa)*100:.2f}")
-                                    self.ProgressBar.set_fraction(downloaded / stream.filesize + sa)
+                                    print(len(chunk))
+                                    print(downloaded)
+                                    print(stream.filesize + sa)
+                                    self.ProgressLabel.set_label(f"%{(downloaded / (stream.filesize + sa))*100:.2f}")
+                                    self.ProgressBar.set_fraction(downloaded / (stream.filesize + sa))
                                 else:
                                     # no more data
                                     break
@@ -841,6 +851,9 @@ class DownloadsRow(Adw.ActionRow):
                                         f.write(chunk)
                                         downloaded += len(chunk)
                                         self.ProgressLabel.set_label(f"%{(downloaded / (stream.filesize + sa))*100:.2f}")
+                                        print(len(chunk))
+                                        print(downloaded)
+                                        print(stream.filesize + sa)
                                         self.ProgressBar.set_fraction(downloaded / (stream.filesize + sa))
                                     else:
                                         # no more data
@@ -852,8 +865,8 @@ class DownloadsRow(Adw.ActionRow):
                             #self.Cancel()
                         else:
                             print(37)
-                            self.ProgressLabel.set_label("Finishing")
-                            self.ProgressBar.pulse()
+                            self.ProgressLabel.set_label("Almost Done")
+                            threading.Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
                             AFname = f"{DownloadCacheDir}{NIR}_AF.webm"
                             VFname = f"{DownloadCacheDir}{NIR}_VF.mp4"
                             Fname = f"{DownloadCacheDir}{NIR}.mp4"
@@ -865,6 +878,7 @@ class DownloadsRow(Adw.ActionRow):
                             os.remove(VFname)
                             move(Fname, f"{self.Loc}{NIR}.mp4")
                             self.ProgressLabel.set_label("Done")
+                            self.ispulse = False
                             self.ProgressBar.set_fraction(1)
                             self.Done()
                             print(38)
@@ -893,19 +907,16 @@ class DownloadsRow(Adw.ActionRow):
                         #self.Cancel()
                         return
                     else:
-                        self.ProgressLabel.set_label("Finishing")
-                        self.ProgressBar.pulse()
-                        #print(1)
+                        self.ProgressLabel.set_label("Almost Done")
+                        threading.Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
                         Fname = f'{DownloadCacheDir}{NIR}.webm'
-                        #print(2)
                         os.rename(f'{DownloadCacheDir}{NIR}.download', Fname)
-                        #print(3)
                         cmd = f'{ffmpeg} -i {Fname} -vn {Fname[0 : -4]}mp3'
                         subprocess.run(cmd, shell = True)
                         os.remove(Fname)
                         move(f'{Fname[0 : -4]}mp3', f'{self.Loc}{NIR}.mp3')
-                        #print(1)
                         self.ProgressLabel.set_label("Done")
+                        self.ispulse = False
                         self.ProgressBar.set_fraction(1)
                         self.Done()
                 print('done')
@@ -918,7 +929,14 @@ class DownloadsRow(Adw.ActionRow):
             # handling FAILURE
         # changing states
 
-    
+
+    def Progressbar_pulse_handler(self, *args):
+        self.ispulse = True
+        while self.ispulse == True:
+            self.ProgressBar.pulse()
+            time.sleep(0.25)
+
+
     def Pause(self, button, *args):
         if button.get_icon_name() == "media-playback-pause-symbolic":
             button.set_icon_name("media-playback-start-symbolic")
