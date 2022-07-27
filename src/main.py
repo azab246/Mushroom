@@ -1045,7 +1045,7 @@ class MushroomApplication(Adw.Application):
         self.DefaultLocation.props.message_area.set_spacing(20)
         self.DefaultLocation.props.modal = True
         self.DefaultLocation.set_transient_for(self.props.active_window)
-        self.Invalid_Path_Label = Gtk.Label.new("Invalid Directory!")
+        self.Invalid_Path_Label = Gtk.Label
         self.Invalid_Path_Label.add_css_class("heading")
         self.Invalid_Path_Revealer = Gtk.Revealer()
         self.Invalid_Path_Revealer.set_transition_duration(150)
@@ -1073,18 +1073,22 @@ class MushroomApplication(Adw.Application):
         print(path)
         print(path[0:len(GLib.get_user_name())+7])
         print(f'/home/{GLib.get_user_name()}/')
-        if os.path.isdir(path) and f'/home/{GLib.get_user_name()}/' in path[0:len(GLib.get_user_name())+7]:
-            with open(DefaultLocFileDir, 'w') as f:
-                f.write(self.DefaultLocEntry.get_text())
-            DefaultLocPATH = self.DefaultLocEntry.get_text()
-            self.DefaultLocation.close()
-            print("Successfully Set To " + DefaultLocPATH)
+        if os.path.isdir(path):
+            if f'/home/{GLib.get_user_name()}/' in path[0:len(GLib.get_user_name())+7]:
+                with open(DefaultLocFileDir, 'w') as f:
+                    f.write(self.DefaultLocEntry.get_text())
+                DefaultLocPATH = self.DefaultLocEntry.get_text()
+                self.DefaultLocation.close()
+                print("Successfully Set To " + DefaultLocPATH)
+            else:
+                threading.Thread(target = self.When_Invalid_Path, args = ["Non-Home Directory!"], daemon = True).start()
         else:
-            threading.Thread(target = self.When_Invalid_Path, daemon = True).start()
+            threading.Thread(target = self.When_Invalid_Path, args = ["Invalid Directory!"], daemon = True).start()
 
-    def When_Invalid_Path(self, *args):
+    def When_Invalid_Path(self, message, *args):
         if self.Invalid_Path_Revealer.get_reveal_child() == False:
-            print("Invalid Directory")
+            print(message)
+            self.Invalid_Path_Label.set_label(message)
             self.Invalid_Path_Revealer.set_reveal_child(True)
             time.sleep(2)
             self.Invalid_Path_Revealer.set_reveal_child(False)
