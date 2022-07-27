@@ -796,7 +796,7 @@ class DownloadsRow(Adw.ActionRow):
                         Fname = f'{self.Loc}{self.Name}_{self.ID}_{self.Res}.mp4'
                         os.rename(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_AF.download', AFname)
                         os.rename(f'{self.Loc}{self.Name}_{self.ID}_{self.Res}_VF.download', VFname)
-                        cmd = f"ffmpeg -i {VFname} -i {AFname} -c copy {Fname}"
+                        cmd = f"ffmpeg -i {VFname} -i {AFname} -c:v copy -c:a aac {Fname}"
                         os.system(cmd)
                         os.remove(AFname)
                         os.remove(VFname)
