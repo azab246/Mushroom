@@ -106,8 +106,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
             with open(DefaultLocFileDir, 'x') as f:
                 f.close()
             with open(DefaultLocFileDir, 'w') as f:
-                f.write(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD))
-                DefaultLocPATH = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)
+                f.write(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)+ '/')
+                DefaultLocPATH = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + '/'
                 f.close()
         self.MainBuffer.connect("inserted_text", self.islistq)
         self.MainBuffer.connect("deleted_text", self.islistq)
@@ -796,8 +796,6 @@ class DownloadsRow(Adw.ActionRow):
                         self.Name = self.Name[0:i] + '_' + self.Name[i+1:len(self.Name)]
                 print(self.Name)
                 yt = pytube.YouTube(self.URL)
-                if self.Loc[len(self.Loc)-1] != "/":
-                    self.Loc = self.Loc + "/"
                 print(1)
                 NIR = f'{self.Name}_{self.ID}_{self.Res}'
                 if self.Type == "Video":
