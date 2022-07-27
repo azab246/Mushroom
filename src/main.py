@@ -39,7 +39,6 @@ import tarfile
 from shutil import rmtree, move
 
 
-
 @Gtk.Template(resource_path='/com/github/azab246/mushroom/gtk/window.ui')
 class MushroomWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'MushroomWindow'
@@ -981,7 +980,6 @@ class AboutDialog(Gtk.AboutDialog):
         self.set_transient_for(parent)
 
 
-
 class MushroomApplication(Adw.Application):
     """The main application singleton class."""
 
@@ -1023,7 +1021,7 @@ class MushroomApplication(Adw.Application):
         # Setting The Dialog
         self.DefaultLocation = Gtk.MessageDialog(parent = self.props.active_window, message_type = 4)
         self.DefaultLocation.props.text = 'Edit Default Download Path'
-        self.DefaultLocation.props.secondary_text = "Enter A Default Folder Path To Be Used In The Future Downloads"
+        self.DefaultLocation.props.secondary_text = "Enter A HOME ONLY Path To Be Used In The Future Downloads"
         # Setting Dialog Widgets
         self.DefaultLocEntry = Gtk.Entry()
         self.DefaultLocEntry.set_margin_top(15)
@@ -1069,7 +1067,13 @@ class MushroomApplication(Adw.Application):
         return DefaultLocPATH
 
     def on_DefaultLoc_Save(self, *args):
-        if os.path.isdir(self.DefaultLocEntry.get_text()):
+        path = self.DefaultLocEntry.get_text()
+        if path[0] != '/':
+            path = '/' + path
+        print(path)
+        print(path[0:len(GLib.get_user_name())+7])
+        print(f'/home/{GLib.get_user_name()}/')
+        if os.path.isdir(path) and f'/home/{GLib.get_user_name()}/' in path[0:len(GLib.get_user_name())+7]:
             with open(DefaultLocFileDir, 'w') as f:
                 f.write(self.DefaultLocEntry.get_text())
             DefaultLocPATH = self.DefaultLocEntry.get_text()
