@@ -1045,8 +1045,8 @@ class MushroomApplication(Adw.Application):
         self.DefaultLocation.props.message_area.set_spacing(20)
         self.DefaultLocation.props.modal = True
         self.DefaultLocation.set_transient_for(self.props.active_window)
-        self.Invalid_Path_Label = Gtk.Label
-        self.Invalid_Path_Label.add_css_class("heading")
+        self.Invalid_Path_Label = Gtk.Label.new(" ")
+        self.Invalid_Path_Label.set_css_classes(["heading"])
         self.Invalid_Path_Revealer = Gtk.Revealer()
         self.Invalid_Path_Revealer.set_transition_duration(150)
         self.Invalid_Path_Revealer.set_transition_type(5)
@@ -1068,6 +1068,9 @@ class MushroomApplication(Adw.Application):
 
     def on_DefaultLoc_Save(self, *args):
         path = self.DefaultLocEntry.get_text()
+        if not path:
+            threading.Thread(target = self.When_Invalid_Path, args = ["Nothing Has Been Entered!"], daemon = True).start()
+            return
         if path[0] != '/':
             path = '/' + path
         print(path)
