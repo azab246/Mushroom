@@ -71,6 +71,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
     Downloads_List = Gtk.Template.Child()
     MainToastOverlay = Gtk.Template.Child()
     TaskManagerPage = Gtk.Template.Child()
+    GlobalRevealer = Gtk.Template.Child()
     VidRequest = 0
     ListRequest = 0
 
@@ -295,10 +296,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
 
     def Playlist_Data(self, *args):
-        global rows
-        if self.connect_func() == False:
-            return
-        try:
+            global rows
+        #if self.connect_func() == False:
+            #return
+        #try:
             self.ListRequest = 1
             #func
             self.ListVidRes = Gtk.ListStore(str)
@@ -310,17 +311,46 @@ class MushroomWindow(Gtk.ApplicationWindow):
             rows = [0]*self.l
             self.LResV = []
             self.LResA = []
-            print("rows done")
+            self.ListResV = [[]]*self.l
+            self.ListResA = [[]]*self.l
+            print("list initializing done, downloading data...")
             i = 0
             for video in self.plist.videos:
-                #if self.connect_func() == False:
-                    #return
-                rows[i] = ListRow(self.plist.video_urls[i] , video.title, video.author, self.time_format(video.length), video.views, self.Playlist_Content_Group)
-                i += 1
+                for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
+                    if stream.resolution not in self.ListResV[i]:
+                        self.ListResV[i].append(stream.resolution)
+                print(self.ListResV[i])
+                for stream in video.streams.filter(type = "audio", file_extension='webm'):
+                    if stream.abr not in self.ListResA[i]:
+                        self.ListResA[i].append(stream.abr)
+                print(self.ListResA[i])
+
+                rows[i] = ListRow(self.plist.video_urls[i] , video.title, video.author, self.time_format(video.length),
+                                 video.views, self.Playlist_Content_Group, self.ListResV[i], self.ListResA[i])
                 print(i)
+                i += 1
+
+            for i in range(len(self.ListResV[0])):
+                x = 0
+                for y in range(self.l):
+                    if self.ListResV[0][i] in self.ListResV[y]:
+                        x += 1
+                if x == self.l:
+                    self.LResV.append(self.ListResV[0][i])
+                    self.ListVidRes.append([f"{self.ListResV[0][i]}"])
+            print(self.LResV)
+            for i in range(len(self.ListResA[0])):
+                x = 0
+                for y in range(self.l):
+                    if self.ListResA[0][i] in self.ListResA[y]:
+                        x += 1
+                if x == self.l:
+                    self.LResA.append(self.ListResA[0][i])
+                    self.ListAuidRes.append([f"{self.ListResA[0][i]}"])
+            print(self.LResA) 
             self.ListNameLabel.set_label(self.plist.title)
             # setting combo boxes data
-            for stream in self.plist.videos[0].streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
+            """ for stream in self.plist.videos[0].streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
                 if f"{stream.resolution}" not in self.LResV:
                     self.ListVidRes.append([f"{stream.resolution}"])
                     self.LResV.append(f"{stream.resolution}")
@@ -329,7 +359,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 if f'{stream.abr}' not in self.LResA:
                     self.ListAuidRes.append([f"{stream.abr}"])
                     self.LResA.append(f'{stream.abr}')
-                    print(stream.abr)
+                    print(stream.abr) """
+            
             self.ListTypeList.append(['Video'])
             self.ListTypeList.append(['Audio'])
             # cell R
@@ -352,13 +383,13 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.Carousel.scroll_to(self.List_revealer, True)
             print("022f")
             return
-        except Exception as err:
+        #except Exception as err:
             if err:
                 self.loading = 0
                 self.Fail(err)
-                return
+                return 
 
-
+    
     def loading_func(self):
         while self.loading == 1:
             self.LoadingProgressBar.pulse()
@@ -463,7 +494,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     def On_List_DownloadFunc(self):
         # Check For No Selection
-        #try:
+        try:
             unselected = 0
             for row in rows:
                 if row.check.get_active() == False:
@@ -556,11 +587,11 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.loading_revealer.set_reveal_child(False)
             self.done_revealer.set_reveal_child(True)
             self.Carousel.scroll_to(self.done_revealer, True)
-        #except Exception as err:
-           # if err:
-               # self.loading = 0
-                #self.Fail(err)
-               # return
+        except Exception as err:
+            if err:
+                self.loading = 0
+                self.Fail(err)
+                return
 
 
 
@@ -601,13 +632,22 @@ class MushroomWindow(Gtk.ApplicationWindow):
     def on_list_type_change(self, combo):
         if self.ListTypeBox.get_active() == 0:
             self.ListResBox.set_model(self.ListVidRes)
-            self.ListResLabel.set_label("Resouloution :")
+            #self.ListResLabel.set_label("Use Global")
+            for i in range(len(rows)):
+                rows[i].CellRBox.set_model(rows[i].VidResStore)
+                rows[i].CellRBox.set_active(0)
             self.ListResBox.set_active(0)
         else:
             self.ListResBox.set_model(self.ListAuidRes)
-            self.ListResLabel.set_label("Bitrate :")
+            #self.ListResLabel.set_label("Bitrate :")
+            for i in range(len(rows)):
+                rows[i].CellRBox.set_model(rows[i].AudResStore)
+                rows[i].CellRBox.set_active(0)
             self.ListResBox.set_active(0)
 
+    @Gtk.Template.Callback()
+    def on_list_global_change(self, combo):
+        return #######################################################################################
 
     @Gtk.Template.Callback()
     def size_label_handler(self, *args):
@@ -657,19 +697,53 @@ class MushroomWindow(Gtk.ApplicationWindow):
     def On_List_Download(self, button):
         threading.Thread(target = self.On_List_DownloadFunc, daemon = True).start()
 
+    @Gtk.Template.Callback()
+    def on_list_global_switch(self, switch, *args):
+        if switch.get_active() == True:
+            self.GlobalRevealer.set_reveal_child(True)
+            for i in range(len(rows)):
+                rows[i].CellRBox.set_sensitive(False)
+        else:
+            self.GlobalRevealer.set_reveal_child(False)
+            for i in range(len(rows)):
+                rows[i].CellRBox.set_sensitive(True)
+
 
 class ListRow(Adw.ActionRow):
-    def __init__(self, url , title, author, lengthf, views, Playlist_Content_Group):
+    def __init__(self, url , title, author, lengthf, views, Playlist_Content_Group, ListV, ListA):
         super().__init__()
+
+        self.RListV = ListV
+        self.RListA = ListA
+        self.VidResStore = Gtk.ListStore(str)
+        self.AudResStore = Gtk.ListStore(str)
+
+        for unit in ListV:
+            self.VidResStore.append([unit])
+        for unit in ListA:
+            self.AudResStore.append([unit])
+        
+        self.CellRBox = Gtk.ComboBox.new_with_model(self.VidResStore)
+        self.CellRBox.set_margin_top(10)
+        self.CellRBox.set_margin_bottom(10)
+        self.CellRBox.set_margin_end(10)
+        renderer_text = Gtk.CellRendererText.new()
+        self.CellRBox.pack_start(renderer_text, True)
+        self.CellRBox.add_attribute(renderer_text, "text", 0)
+        self.CellRBox.set_active(0)
+
         self.URL = url
         self.Title = title
         self.Author = author
         self.set_title_lines(1)
         self.set_subtitle_lines(1)
         self.check = Gtk.CheckButton()
+        self.check.connect('toggled', self.on_list_row_selection)
         self.check.set_active(True)
         self.check.add_css_class("selection-mode")
         self.add_prefix(self.check)
+        self.ddd = 45
+        self.add_suffix(self.CellRBox)
         name = html.escape(title)
         if len(name) > 80:
             name = name[:80]+"..."
@@ -693,6 +767,15 @@ class ListRow(Adw.ActionRow):
         self.URL = None
         self.Title = None
         self.Author = None
+
+    def on_list_row_selection(self, SB, *args):
+        if SB.get_active() == False:
+            self.CellRBox.set_sensitive(False)
+            self.set_css_classes(['dim-label'])
+        else:
+            self.CellRBox.set_sensitive(True)
+            self.set_css_classes([])
+
 
 class DownloadsRow(Adw.ActionRow):
     def __init__(self, DURL, DRes , DType, DLoc, DAddedOn, DSize, DName, DID):
