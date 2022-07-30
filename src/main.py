@@ -36,6 +36,15 @@ import subprocess
 import tarfile
 from shutil import rmtree, move
 
+global DefaultLocFileDir
+global DefaultLocPATH
+global cache_dir
+global data_dir
+global ffmpeg
+global DownloadCacheDir
+global APPID
+APPID = 'com.github.azab246.mushroom'
+
 
 @Gtk.Template(resource_path='/com/github/azab246/mushroom/gtk/window.ui')
 class MushroomWindow(Gtk.ApplicationWindow):
@@ -76,14 +85,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        global DefaultLocFileDir
-        global DefaultLocPATH
-        global cache_dir
-        global data_dir
-        global ffmpeg
-        global DownloadCacheDir
-        global APPID
-        APPID = 'com.github.azab246.mushroom'
         self.isactivetoast = False
         cache_dir = GLib.get_user_cache_dir()
         data_dir = GLib.get_user_data_dir()
@@ -1070,7 +1071,7 @@ class AboutDialog(Gtk.AboutDialog):
         self.props.version = "0.1.0"
         self.props.authors = ['Abdalrahman Azab']
         self.props.copyright = '2022 Abdalrahman Azab'
-        self.props.logo_icon_name = 'com.github.azab246.mushroom'
+        self.props.logo_icon_name = APPID
         self.props.modal = True
         self.set_transient_for(parent)
 
@@ -1079,7 +1080,7 @@ class MushroomApplication(Adw.Application):
     """The main application singleton class."""
 
     def __init__(self):
-        super().__init__(application_id='com.github.azab246.mushroom',
+        super().__init__(application_id= APPID,
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
         self.create_action('quit', self.quit, ['<primary>q'])
         self.create_action('about', self.on_about_action)
