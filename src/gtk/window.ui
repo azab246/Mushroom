@@ -179,6 +179,7 @@
                             <object class="GtkRevealer" id="List_revealer">
                               <property name="transition-type">0</property>
                               <property name="reveal-child">False</property>
+                              <property name="hexpand">True</property>
                               <child>
                                 <object class="GtkScrolledWindow" id="list_scrolled_window">
                                   <property name="hscrollbar_policy">2</property>
@@ -325,6 +326,7 @@
                             <object class="GtkRevealer" id="vid_revealer">
                               <property name="transition-type">0</property>
                               <property name="reveal-child">False</property>
+                              <property name="hexpand">True</property>
                               <child>
                                 <object class="GtkBox" id="mainVidView">
                                   <property name="orientation">vertical</property>
@@ -560,6 +562,22 @@
                                           <property name="title">History</property>
                                         </object>
                                       </child-->
+                                  </child>
+                                  <child>
+                                    <object class="GtkRevealer" id="Nothing_D_Revealer">
+                                      <property name="transition-duration">150</property>
+                                      <property name="transition-type">1</property>
+                                      <property name="reveal-child">True</property>
+                                      <property name="child">
+                                        <object class="AdwStatusPage" id="Nothing_To_Show">
+                                          <property name="icon-name">checkbox-checked-symbolic</property>
+                                          <property name="title" translatable="yes">Nothing To Do!</property>
+                                          <property name="description" translatable="yes">Looks Like There Is No Active Downloads Right Now</property>
+                                          <property name="vexpand">True</property>
+                                          <property name="hexpand">True</property>
+                                        </object>
+                                      </property>
+                                    </object>
                                   </child>
                                 </object>
                               </child>

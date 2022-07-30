@@ -12,6 +12,13 @@
         "--socket=wayland",
         "--filesystem=home"
     ],
+    "add-extensions": {
+        "org.freedesktop.Platform.ffmpeg-full": {
+            "directory": "lib/ffmpeg",
+            "version": "21.08",
+            "add-ld-path": "."
+        }
+    },
     "cleanup" : [
         "/include",
         "/lib/pkgconfig",
@@ -21,7 +28,8 @@
         "/share/man",
         "/share/pkgconfig",
         "*.la",
-        "*.a"
+        "*.a",
+        "mkdir -p /app/lib/ffmpeg"
     ],
     "modules" : [
         {

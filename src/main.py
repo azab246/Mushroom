@@ -16,8 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from curses.ascii import isalpha, isdigit
-from genericpath import isfile
-from sre_constants import FAILURE
 import sys
 import gi
 
@@ -72,6 +70,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
     MainToastOverlay = Gtk.Template.Child()
     TaskManagerPage = Gtk.Template.Child()
     GlobalRevealer = Gtk.Template.Child()
+    Nothing_D_Revealer = Gtk.Template.Child()
     VidRequest = 0
     ListRequest = 0
 
@@ -83,6 +82,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
         global data_dir
         global ffmpeg
         global DownloadCacheDir
+        global APPID
+        APPID = 'com.github.azab246.mushroom'
         self.isactivetoast = False
         cache_dir = GLib.get_user_cache_dir()
         data_dir = GLib.get_user_data_dir()
@@ -218,6 +219,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 #print(video[7])
                 #print(list(self.Download_Rows.keys()))
                 if str(video[7]) not in list(self.Download_Rows.keys()):
+                    if len(self.Download_Rows.keys()) == 0:
+                        self.Nothing_D_Revealer.set_reveal_child(False)
                     print("Adding To Downloads List : " + video[6] + f"  ( {video[2]} )")
                     self.Download_Rows[str(video[7])] = DownloadsRow(video[0], video[1], video[2], video[3], video[4], video[5], video[6], video[7])
                     self.Downloads_List.prepend(self.Download_Rows[str(video[7])])
@@ -311,43 +314,51 @@ class MushroomWindow(Gtk.ApplicationWindow):
             rows = [0]*self.l
             self.LResV = []
             self.LResA = []
-            self.ListResV = [[]]*self.l
-            self.ListResA = [[]]*self.l
+            self.ListResV = [0 for j in range(self.l)]
+            self.ListResA = [0 for j in range(self.l)]
             print("list initializing done, downloading data...")
+            print("----------------------------------")
             i = 0
             for video in self.plist.videos:
+                vl = []
+                al = []
+                print(f'Vedeo {i}')
                 for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
-                    if stream.resolution not in self.ListResV[i]:
-                        self.ListResV[i].append(stream.resolution)
-                print(self.ListResV[i])
+                    if stream.resolution not in vl:
+                        vl.append(stream.resolution)
+                self.ListResV[i] = vl
+                print(f"Avilable Video Resolutions: {self.ListResA[i]}")
                 for stream in video.streams.filter(type = "audio", file_extension='webm'):
-                    if stream.abr not in self.ListResA[i]:
-                        self.ListResA[i].append(stream.abr)
-                print(self.ListResA[i])
-
+                    if stream.abr not in al:
+                        al.append(stream.abr)
+                self.ListResA[i] = al
+                print(f"Avilable Audio Bitrates: {self.ListResA[i]}")
+                print("----------------------------------")
                 rows[i] = ListRow(self.plist.video_urls[i] , video.title, video.author, self.time_format(video.length),
                                  video.views, self.Playlist_Content_Group, self.ListResV[i], self.ListResA[i])
-                print(i)
                 i += 1
-
             for i in range(len(self.ListResV[0])):
                 x = 0
                 for y in range(self.l):
                     if self.ListResV[0][i] in self.ListResV[y]:
                         x += 1
+                    else:
+                        break
                 if x == self.l:
                     self.LResV.append(self.ListResV[0][i])
                     self.ListVidRes.append([f"{self.ListResV[0][i]}"])
-            print(self.LResV)
+            print(f'Common Video Resolutions(For Global): {self.LResV}')
             for i in range(len(self.ListResA[0])):
                 x = 0
                 for y in range(self.l):
                     if self.ListResA[0][i] in self.ListResA[y]:
                         x += 1
+                    else:
+                        break
                 if x == self.l:
                     self.LResA.append(self.ListResA[0][i])
                     self.ListAuidRes.append([f"{self.ListResA[0][i]}"])
-            print(self.LResA) 
+            print(f'Common Audio Bitrates(For Global): {self.LResA}') 
             self.ListNameLabel.set_label(self.plist.title)
             # setting combo boxes data
             """ for stream in self.plist.videos[0].streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
@@ -715,6 +726,9 @@ class ListRow(Adw.ActionRow):
 
         self.RListV = ListV
         self.RListA = ListA
+        self.URL = url
+        self.Title = title
+        self.Author = author
         self.VidResStore = Gtk.ListStore(str)
         self.AudResStore = Gtk.ListStore(str)
 
@@ -723,6 +737,7 @@ class ListRow(Adw.ActionRow):
         for unit in ListA:
             self.AudResStore.append([unit])
         
+        # the structure of the row
         self.CellRBox = Gtk.ComboBox.new_with_model(self.VidResStore)
         self.CellRBox.set_margin_top(10)
         self.CellRBox.set_margin_bottom(10)
@@ -732,9 +747,7 @@ class ListRow(Adw.ActionRow):
         self.CellRBox.add_attribute(renderer_text, "text", 0)
         self.CellRBox.set_active(0)
 
-        self.URL = url
-        self.Title = title
-        self.Author = author
+
         self.set_title_lines(1)
         self.set_subtitle_lines(1)
         self.check = Gtk.CheckButton()
@@ -745,11 +758,13 @@ class ListRow(Adw.ActionRow):
         self.ddd = 45
         self.add_suffix(self.CellRBox)
         name = html.escape(title)
-        if len(name) > 80:
-            name = name[:80]+"..."
+        if len(name) > 60:
+            name = name[:60]+"..."
         self.set_title(name)
         self.set_subtitle(f"Channel: {html.escape(author)} Length: " + lengthf + " Views: " + f"{views:,}")
         Playlist_Content_Group.add(self)
+
+
 
     def destroy_row(self, Playlist_Content_Group):
         try:
@@ -867,7 +882,6 @@ class DownloadsRow(Adw.ActionRow):
         self.InnerBox1.append(self.ProgressBox)
         self.set_child(self.MainBox)
         threading.Thread(target = self.Download_Handler, daemon = True).start()
-
 
 
     def Download_Handler(self, *args):
