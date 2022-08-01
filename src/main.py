@@ -158,7 +158,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
             downloaded = tarfile.open(f"{data_dir}/ffmpeg.tar.xz")
             downloaded.extractall(f"{data_dir}/ffmpegdir")
             co = subprocess.check_output(f'ls {data_dir}/ffmpegdir/', shell=True).decode('utf-8')
-            print(co)
             os.remove(f"{data_dir}/ffmpeg.tar.xz")
             os.rename(f"{data_dir}/ffmpegdir/{co[0:-1]}/ffmpeg", f'{data_dir}/ffmpeg')
             rmtree(f"{data_dir}/ffmpegdir")
