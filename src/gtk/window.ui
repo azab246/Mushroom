@@ -488,7 +488,6 @@
                                       <child>
                                         <object class="GtkButton">
                                           <property name="label">Go Back</property>
-                                          <property name="width-request">100</property>
                                           <signal name="clicked" handler="On_Go_Back"/>
                                           <style>
                                             <class name="Cancel-Button"/>
