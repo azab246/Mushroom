@@ -757,7 +757,6 @@ class ListRow(Adw.ActionRow):
         self.check.set_active(True)
         self.check.add_css_class("selection-mode")
         self.add_prefix(self.check)
-        self.ddd = 45
         self.add_suffix(self.CellRBox)
         name = html.escape(title)
         if len(name) > 60:
@@ -771,7 +770,9 @@ class ListRow(Adw.ActionRow):
     def destroy_row(self, Playlist_Content_Group):
         try:
             self.remove(self.check)
+            self.remove(self.CellRBox)
             self.check.run_dispose()
+            self.CellRBox.run_dispose()
         except Exception as e:
             print(str(e))
             pass
@@ -784,6 +785,10 @@ class ListRow(Adw.ActionRow):
         self.URL = None
         self.Title = None
         self.Author = None
+        self.RListV = None
+        self.RListA = None
+        self.VidResStore = None
+        self.AudResStore = None
 
     def on_list_row_selection(self, SB, *args):
         if SB.get_active() == False:
