@@ -510,7 +510,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 return
 
 
-# TODO: Remake List Downloading Function
+    # TODO: Remake List Downloading Function
 
     def On_List_DownloadFunc(self): # <----------- Waiting For A Remake
         # Check For No Selection
@@ -738,9 +738,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.GlobalRevealer.set_reveal_child(False)
             for i in range(len(rows)):
                 rows[i].CellRBox.set_sensitive(True)
-                rows[i].CellRBox.set_active(rows[i].RListV[self.ListVidRes[self.ListResBox.get_active()]]
+                rows[i].CellRBox.set_active(rows[i].RListV[self.LResV[self.ListResBox.get_active()]]
                                             if self.ListTypeBox.get_active() == 0 else 
-                                            rows[i].RListA[self.ListAuidRes[self.ListResBox.get_active()]])             
+                                            rows[i].RListA[self.LResA[self.ListResBox.get_active()]])             
 
 
 class ListRow(Adw.ActionRow):
@@ -1092,7 +1092,6 @@ class DownloadsRow(Adw.ActionRow):
 
 
 class AboutDialog(Gtk.AboutDialog):
-
     def __init__(self, parent):
         Gtk.AboutDialog.__init__(self)
         self.props.program_name = 'Mushroom'
@@ -1102,6 +1101,92 @@ class AboutDialog(Gtk.AboutDialog):
         self.props.logo_icon_name = APPID
         self.props.modal = True
         self.set_transient_for(parent)
+        self.present()
+
+class Location_Message_Dialog(Gtk.MessageDialog):
+    def __init__(self, parent):
+        Gtk.MessageDialog.__init__(self)
+        self.props.text = 'Edit Default Download Path'
+        self.props.secondary_text = "Enter A HOME ONLY Path To Be Used In The Future Downloads"
+        # Setting Dialog Widgets
+        self.DefaultLocEntry = Gtk.Entry()
+        self.DefaultLocEntry.set_margin_top(15)
+        DefaultLocPATH = self.Update_Download_Path()
+        if len(DefaultLocPATH) > 52:
+            self.DefaultLocEntry.set_placeholder_text(DefaultLocPATH[:52]+"...")
+        else:
+            self.DefaultLocEntry.set_placeholder_text(DefaultLocPATH)
+        self.DefaultLocButtonBox = Gtk.Box.new(0, 40)
+        self.DefaultCancel = Gtk.Button.new_with_label("Cancel")
+        self.DefaultCancel.connect("clicked", self.on_DefaultLoc_Cancel)
+        self.DefaultCancel.set_css_classes(["Cancel-Button", "pill"])
+        self.DefaultSave = Gtk.Button.new_with_label("  Save  ")
+        self.DefaultSave.connect("clicked", self.on_DefaultLoc_Save)
+        self.DefaultSave.set_css_classes(["Accept-Button","pill"])
+        self.DefaultLocButtonBox.append(self.DefaultCancel)
+        self.DefaultLocButtonBox.append(self.DefaultSave)
+        self.DefaultLocButtonBox.set_halign(3)
+        self.props.message_area.set_margin_top(20)
+        self.props.message_area.set_margin_bottom(20)
+        self.props.message_area.set_spacing(20)
+        self.props.modal = True
+        self.set_transient_for(parent)
+        self.Invalid_Path_Label = Gtk.Label.new(" ")
+        self.Invalid_Path_Label.set_css_classes(["heading"])
+        self.Invalid_Path_Revealer = Gtk.Revealer()
+        self.Invalid_Path_Revealer.set_transition_duration(150)
+        self.Invalid_Path_Revealer.set_transition_type(5)
+        self.Invalid_Path_Revealer.set_child(self.Invalid_Path_Label)
+        self.props.message_area.append(self.DefaultLocEntry)
+        self.props.message_area.append(self.Invalid_Path_Revealer)
+        self.props.message_area.append(self.DefaultLocButtonBox)
+        self.present()
+
+
+    def on_DefaultLoc_Cancel(self, *args):
+        self.close()
+
+
+    def Update_Download_Path(self, *args):
+        with open(DefaultLocFileDir, 'r') as f:
+            DefaultLocPATH = f.read()
+        print("Location For New Downloads Is :" + DefaultLocPATH)
+        f.close()
+        return DefaultLocPATH
+
+
+    def on_DefaultLoc_Save(self, *args):
+        path = self.DefaultLocEntry.get_text()
+        if not path:
+            threading.Thread(target = self.When_Invalid_Path, args = ["Nothing Has Been Entered!"], daemon = True).start()
+            return
+        if path[0] != '/':
+            path = '/' + path
+        if path[len(path)-1] != '/':
+            path = path + '/'
+        if os.path.isdir(path):
+            if f'/home/{GLib.get_user_name()}/' in path[0:len(GLib.get_user_name())+7]:
+                with open(DefaultLocFileDir, 'w') as f:
+                    f.write(path)
+                DefaultLocPATH = path
+                self.close()
+                print("Successfully Set To " + DefaultLocPATH)
+            else:
+                threading.Thread(target = self.When_Invalid_Path, args = ["Non-Home Directory!"], daemon = True).start()
+        else:
+            threading.Thread(target = self.When_Invalid_Path, args = ["Invalid Directory!"], daemon = True).start()
+
+
+    def When_Invalid_Path(self, message, *args):
+        if self.Invalid_Path_Revealer.get_reveal_child() == False:
+            print(message)
+            self.Invalid_Path_Label.set_label(message)
+            self.Invalid_Path_Revealer.set_reveal_child(True)
+            time.sleep(2)
+            self.Invalid_Path_Revealer.set_reveal_child(False)
+
+
+
 
 
 class MushroomApplication(Adw.Application):
@@ -1139,85 +1224,11 @@ class MushroomApplication(Adw.Application):
     def on_about_action(self, widget, _):
         """Callback for the app.about action."""
         about = AboutDialog(self.props.active_window)
-        about.present()
 
     def on_DefaultLoc_action(self, widget, _):
         # Setting The Dialog
-        self.DefaultLocation = Gtk.MessageDialog(parent = self.props.active_window, message_type = 4)
-        self.DefaultLocation.props.text = 'Edit Default Download Path'
-        self.DefaultLocation.props.secondary_text = "Enter A HOME ONLY Path To Be Used In The Future Downloads"
-        # Setting Dialog Widgets
-        self.DefaultLocEntry = Gtk.Entry()
-        self.DefaultLocEntry.set_margin_top(15)
-        DefaultLocPATH = self.Update_Download_Path()
-        if len(DefaultLocPATH) > 52:
-            self.DefaultLocEntry.set_placeholder_text(DefaultLocPATH[:52]+"...")
-        else:
-            self.DefaultLocEntry.set_placeholder_text(DefaultLocPATH)
-        self.DefaultLocButtonBox = Gtk.Box.new(0, 40)
-        self.DefaultCancel = Gtk.Button.new_with_label("Cancel")
-        self.DefaultCancel.connect("clicked", self.on_DefaultLoc_Cancel)
-        self.DefaultCancel.set_css_classes(["Cancel-Button", "pill"])
-        self.DefaultSave = Gtk.Button.new_with_label("  Save  ")
-        self.DefaultSave.connect("clicked", self.on_DefaultLoc_Save)
-        self.DefaultSave.set_css_classes(["Accept-Button","pill"])
-        self.DefaultLocButtonBox.append(self.DefaultCancel)
-        self.DefaultLocButtonBox.append(self.DefaultSave)
-        self.DefaultLocButtonBox.set_halign(3)
-        self.DefaultLocation.props.message_area.set_margin_top(20)
-        self.DefaultLocation.props.message_area.set_margin_bottom(20)
-        self.DefaultLocation.props.message_area.set_spacing(20)
-        self.DefaultLocation.props.modal = True
-        self.DefaultLocation.set_transient_for(self.props.active_window)
-        self.Invalid_Path_Label = Gtk.Label.new(" ")
-        self.Invalid_Path_Label.set_css_classes(["heading"])
-        self.Invalid_Path_Revealer = Gtk.Revealer()
-        self.Invalid_Path_Revealer.set_transition_duration(150)
-        self.Invalid_Path_Revealer.set_transition_type(5)
-        self.Invalid_Path_Revealer.set_child(self.Invalid_Path_Label)
-        self.DefaultLocation.props.message_area.append(self.DefaultLocEntry)
-        self.DefaultLocation.props.message_area.append(self.Invalid_Path_Revealer)
-        self.DefaultLocation.props.message_area.append(self.DefaultLocButtonBox)
-        self.DefaultLocation.present()
+        self.DefaultLocation = Location_Message_Dialog(self.props.active_window)
 
-    def on_DefaultLoc_Cancel(self, *args):
-        self.DefaultLocation.close()
-
-    def Update_Download_Path(self, *args):
-        with open(DefaultLocFileDir, 'r') as f:
-            DefaultLocPATH = f.read()
-        print("Location For New Downloads Is :" + DefaultLocPATH)
-        f.close()
-        return DefaultLocPATH
-
-    def on_DefaultLoc_Save(self, *args):
-        path = self.DefaultLocEntry.get_text()
-        if not path:
-            threading.Thread(target = self.When_Invalid_Path, args = ["Nothing Has Been Entered!"], daemon = True).start()
-            return
-        if path[0] != '/':
-            path = '/' + path
-        if path[len(path)-1] != '/':
-            path = path + '/'
-        if os.path.isdir(path):
-            if f'/home/{GLib.get_user_name()}/' in path[0:len(GLib.get_user_name())+7]:
-                with open(DefaultLocFileDir, 'w') as f:
-                    f.write(path)
-                DefaultLocPATH = path
-                self.DefaultLocation.close()
-                print("Successfully Set To " + DefaultLocPATH)
-            else:
-                threading.Thread(target = self.When_Invalid_Path, args = ["Non-Home Directory!"], daemon = True).start()
-        else:
-            threading.Thread(target = self.When_Invalid_Path, args = ["Invalid Directory!"], daemon = True).start()
-
-    def When_Invalid_Path(self, message, *args):
-        if self.Invalid_Path_Revealer.get_reveal_child() == False:
-            print(message)
-            self.Invalid_Path_Label.set_label(message)
-            self.Invalid_Path_Revealer.set_reveal_child(True)
-            time.sleep(2)
-            self.Invalid_Path_Revealer.set_reveal_child(False)
 
     def create_action(self, name, callback, shortcuts=None):
         """Add an application action.
@@ -1239,4 +1250,3 @@ def main(version):
     """The application's entry point."""
     app = MushroomApplication()
     return app.run(sys.argv)
-
