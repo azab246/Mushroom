@@ -36,12 +36,6 @@ import subprocess
 import tarfile
 from shutil import rmtree, move
 
-global DefaultLocFileDir
-global DefaultLocPATH
-global cache_dir
-global data_dir
-global ffmpeg
-global DownloadCacheDir
 global APPID
 APPID = 'com.github.azab246.mushroom'
 
@@ -84,6 +78,12 @@ class MushroomWindow(Gtk.ApplicationWindow):
     ListRequest = 0
 
     def __init__(self, **kwargs):
+        global DefaultLocFileDir
+        global DefaultLocPATH
+        global cache_dir
+        global data_dir
+        global DownloadCacheDir
+        global ffmpeg
         super().__init__(**kwargs)
         self.isactivetoast = False
         cache_dir = GLib.get_user_cache_dir()
@@ -215,11 +215,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.db = conn.cursor()
             queue = self.db.execute("SELECT * FROM Downloads")
             for video in queue:
-                #print(video)
-                #print(video[7])
-                #print(list(self.Download_Rows.keys()))
                 if str(video[7]) not in list(self.Download_Rows.keys()):
-                    if len(self.Download_Rows.keys()) == 0:
+                    if len(list(self.Download_Rows.keys())) == 0:
                         self.Nothing_D_Revealer.set_reveal_child(False)
                     print("Adding To Downloads List : " + video[6] + f"  ( {video[2]} )")
                     self.Download_Rows[str(video[7])] = DownloadsRow(video[0], video[1], video[2], video[3], video[4], video[5], video[6], video[7])
@@ -299,10 +296,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
 
     def Playlist_Data(self, *args):
-            global rows
-        #if self.connect_func() == False:
-            #return
-        #try:
+        global rows
+        if self.connect_func() == False:
+            return
+        try:
             self.ListRequest = 1
             #func
             self.ListVidRes = Gtk.ListStore(str)
@@ -320,44 +317,44 @@ class MushroomWindow(Gtk.ApplicationWindow):
             print("----------------------------------")
             i = 0
             for video in self.plist.videos:
-                vl = []
-                al = []
+                vl = {}
+                al = {}
                 print(f'Vedeo {i}')
                 for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
-                    if stream.resolution not in vl:
-                        vl.append(stream.resolution)
+                    if stream.resolution not in list(vl.keys()):
+                        vl[stream.resolution] = 0
                 self.ListResV[i] = vl
-                print(f"Avilable Video Resolutions: {self.ListResA[i]}")
+                print(f"Avilable Video Resolutions: {list(self.ListResV[i].keys())}")
                 for stream in video.streams.filter(type = "audio", file_extension='webm'):
-                    if stream.abr not in al:
-                        al.append(stream.abr)
+                    if stream.abr not in list(al.keys()):
+                        al[stream.abr] = 0
                 self.ListResA[i] = al
-                print(f"Avilable Audio Bitrates: {self.ListResA[i]}")
+                print(f"Avilable Audio Bitrates: {list(self.ListResA[i].keys())}")
                 print("----------------------------------")
                 rows[i] = ListRow(self.plist.video_urls[i] , video.title, video.author, self.time_format(video.length),
                                  video.views, self.Playlist_Content_Group, self.ListResV[i], self.ListResA[i])
                 i += 1
-            for i in range(len(self.ListResV[0])):
+            for i in range(len(list(self.ListResV[0].keys()))):
                 x = 0
                 for y in range(self.l):
-                    if self.ListResV[0][i] in self.ListResV[y]:
+                    if list(self.ListResV[0].keys())[i] in list(self.ListResV[y].keys()):
                         x += 1
                     else:
                         break
                 if x == self.l:
-                    self.LResV.append(self.ListResV[0][i])
-                    self.ListVidRes.append([f"{self.ListResV[0][i]}"])
+                    self.LResV.append(list(self.ListResV[0].keys())[i])
+                    self.ListVidRes.append([f"{list(self.ListResV[0].keys())[i]}"])
             print(f'Common Video Resolutions(For Global): {self.LResV}')
-            for i in range(len(self.ListResA[0])):
+            for i in range(len(list(self.ListResA[0].keys()))):
                 x = 0
                 for y in range(self.l):
-                    if self.ListResA[0][i] in self.ListResA[y]:
+                    if list(self.ListResA[0].keys())[i] in list(self.ListResA[y].keys()):
                         x += 1
                     else:
                         break
                 if x == self.l:
-                    self.LResA.append(self.ListResA[0][i])
-                    self.ListAuidRes.append([f"{self.ListResA[0][i]}"])
+                    self.LResA.append(list(self.ListResA[0].keys())[i])
+                    self.ListAuidRes.append([f"{list(self.ListResA[0].keys())[i]}"])
             print(f'Common Audio Bitrates(For Global): {self.LResA}') 
             self.ListNameLabel.set_label(self.plist.title)
             # setting combo boxes data
@@ -394,7 +391,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.Carousel.scroll_to(self.List_revealer, True)
             print("022f")
             return
-        #except Exception as err:
+        except Exception as err:
             if err:
                 self.loading = 0
                 self.Fail(err)
@@ -656,9 +653,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 rows[i].CellRBox.set_active(0)
             self.ListResBox.set_active(0)
 
-    @Gtk.Template.Callback()
-    def on_list_global_change(self, combo):
-        return #######################################################################################
+    #@Gtk.Template.Callback()
+    #def on_list_global_change(self, combo):
+        #return #######################################################################################
 
     @Gtk.Template.Callback()
     def size_label_handler(self, *args):
@@ -718,6 +715,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.GlobalRevealer.set_reveal_child(False)
             for i in range(len(rows)):
                 rows[i].CellRBox.set_sensitive(True)
+                rows[i].CellRBox.set_active(rows[i].RListV[self.ListVidRes[self.ListResBox.get_active()]]
+                                            if self.ListTypeBox.get_active() == 0 else 
+                                            rows[i].RListA[self.ListAuidRes[self.ListResBox.get_active()]])             
 
 
 class ListRow(Adw.ActionRow):
@@ -732,10 +732,12 @@ class ListRow(Adw.ActionRow):
         self.VidResStore = Gtk.ListStore(str)
         self.AudResStore = Gtk.ListStore(str)
 
-        for unit in ListV:
-            self.VidResStore.append([unit])
-        for unit in ListA:
-            self.AudResStore.append([unit])
+        for i in range(len(list(self.RListV.keys()))):
+            self.VidResStore.append([list(self.RListV.keys())[i]])
+            self.RListV[list(self.RListV.keys())[i]] = i
+        for i in range(len(list(self.RListA.keys()))):
+            self.AudResStore.append([list(self.RListA.keys())[i]])
+            self.RListA[list(self.RListA.keys())[i]] = i
         
         # the structure of the row
         self.CellRBox = Gtk.ComboBox.new_with_model(self.VidResStore)
