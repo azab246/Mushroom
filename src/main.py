@@ -312,7 +312,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.ListTypeList = Gtk.ListStore(str)
             self.link = self.MainBuffer.get_text()
             self.plist = pytube.Playlist(self.link)
-            self.l = len(self.plist.videos)
+            videos = self.plist.videos
+            self.l = len(videos)
             rows = [0]*self.l
             self.LResV = []
             self.LResA = []
@@ -321,7 +322,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             print("List Initialization Is Done, Downloading Data...")
             print("----------------------------------")
             i = 0
-            for video in self.plist.videos:
+            for video in videos:
                 vl = {}
                 al = {}
                 print(f'Video {i}')
@@ -676,7 +677,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def On_Go_Back(self, button):
-
+        print("Cleaning...")
         if self.VidRequest == 1:
             self.VidVidRes.clear()
             self.VidAuidRes.clear()
@@ -692,7 +693,18 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.ListResBox.clear()
             self.ListTypeBox.clear()
             for i in range(len(rows)):
-                rows[i].destroy_row(self.Playlist_Content_Group)
+                try:
+                    rows[i].destroy_row(self.Playlist_Content_Group)
+                except AttributeError as e:
+                    print("Rows Has Not Been Finished Yet, Skipping")
+                    break
+                except Exception as err:
+                    if err:
+                        print("Something Un Expected Happened :/")
+                        self.loading = 0
+                        self.Fail(err)
+                        return
+
             self.ListRequest = 0
         self.VidSizeLabel.set_label("")
         self.MainEntry.set_text("")
@@ -706,6 +718,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         self.vid_revealer.set_reveal_child(False)
         self.done_revealer.set_reveal_child(False)
         self.fail_revealer.set_reveal_child(False)
+        print("Done")
 
     @Gtk.Template.Callback()
     def On_Vid_Download(self, button):
