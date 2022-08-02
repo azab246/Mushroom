@@ -238,7 +238,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         if self.connect_func() == False:
                 return
         try:
-            print('Starting.')
+            print('Starting...')
             self.VidRequest = 1
             self.VidVidRes = Gtk.ListStore(str)
             self.VidAuidRes = Gtk.ListStore(str)
@@ -254,7 +254,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.SizesV = []
             self.ResV = []
             self.ResA = []
-            print('Getting Data..')
+            print('Getting Data...')
             for stream in self.vid.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
                 if f"{stream.resolution}" not in self.ResV:
                     self.VidVidRes.append([f"{stream.resolution}"])
@@ -269,7 +269,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     #print(stream.abr)
             self.VidTypeList.append(['Video'])
             self.VidTypeList.append(['Audio'])
-            print('Setting UI...')
+            print('Setting Up UI...')
             # cell R
             # type
             self.VidTypeBox.set_model(self.VidTypeList)
@@ -375,7 +375,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     print(stream.abr) """
             self.ListTypeList.append(['Video'])
             self.ListTypeList.append(['Audio'])
-            print("Setting UI")
+            print("Setting Up UI")
             # cell R
             # type
             self.ListTypeBox.set_model(self.ListTypeList)
