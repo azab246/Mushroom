@@ -486,7 +486,7 @@
                                       <property name="spacing">20</property>
                                       <property name="margin-top">20</property>
                                       <child>
-                                        <object class="GtkButton">
+                                        <object class="GtkButton" id="Fail_Button">
                                           <property name="label">Go Back</property>
                                           <signal name="clicked" handler="On_Go_Back"/>
                                           <style>

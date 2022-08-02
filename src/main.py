@@ -74,6 +74,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
     TaskManagerPage = Gtk.Template.Child()
     GlobalRevealer = Gtk.Template.Child()
     Nothing_D_Revealer = Gtk.Template.Child()
+    Fail_Button = Gtk.Template.Child()
     VidRequest = 0
     ListRequest = 0
 
@@ -103,7 +104,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         try:
             with open(DefaultLocFileDir, 'r') as f:
                 DefaultLocPATH = f.read()
-                print(DefaultLocPATH)
+                print("All New Downloads Will Be Exported At : " + DefaultLocPATH)
             f.close
         except FileNotFoundError:
             with open(DefaultLocFileDir, 'x') as f:
@@ -112,8 +113,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 f.write(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)+ '/')
                 DefaultLocPATH = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + '/'
                 f.close()
-        self.MainBuffer.connect("inserted_text", self.islistq)
-        self.MainBuffer.connect("deleted_text", self.islistq)
+        self.MainBuffer.connect("inserted_text", self.islistq, self, True)
+        self.MainBuffer.connect("deleted_text", self.islistq, self, True)
         self.Download_Rows = {}
         threading.Thread(target = self.AppData_Initialization, daemon = True).start()
         threading.Thread(target = self.UpdateDownloads, daemon = True).start()
@@ -136,7 +137,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.MainEntry.set_sensitive(False)
             NoneToast.set_timeout(5)
             self.MainToastOverlay.add_toast(NoneToast)
-            print("Downloading ffmpeg ~41MB, This Should be Done At The First Time of Running The App")
             print("Cant Find ffmpeg, Trying To Download it from https://johnvansickle.com/ffmpeg/builds/")
             co = subprocess.check_output('uname -m', shell=True).decode('utf-8')
             if "x86_64" in co :
@@ -150,9 +150,12 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 URL = "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-arm64-static.tar.xz"
             else:
                 print('Unsupported arch')
+                self.Fail_Button.set_visible(False)
+                self.Fail_Button.set_sensitive(False)
                 self.Fail("Sorry, Your Device is not Supported for ffmpeg, only x86_64, i686, aarch64 are supported")
-                print("Sorry, Your CPU arch is not Supported for ffmpeg, only x86_64, i686, aarch64 are supported")
+                print("Your CPU arch is not Supported for ffmpeg, only x86_64, i686, aarch64 are supported")
                 return
+            print("Downloading ffmpeg ~41MB, This Should be Done At The First Time of Running The App")
             urllib.request.urlretrieve(URL, f"{data_dir}/ffmpeg.download")
             os.rename(f"{data_dir}/ffmpeg.download", f"{data_dir}/ffmpeg.tar.xz")  
             downloaded = tarfile.open(f"{data_dir}/ffmpeg.tar.xz")
@@ -200,7 +203,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
           CREATE TABLE IF NOT EXISTS Downloads
           ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)
           ''')
-        print(res)
+        #print(res)
         self.db.execute("INSERT INTO Downloads (url, res, type, location, added_on, size, name) VALUES (?, ?, ?, ?, ?, ?, ?)", (url, str(res), dtype, MushroomApplication.Update_Download_Path(MushroomApplication), dt, fsize, name))
         conn.commit()
         conn.close()
@@ -235,6 +238,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         if self.connect_func() == False:
                 return
         try:
+            print('Starting.')
             self.VidRequest = 1
             self.VidVidRes = Gtk.ListStore(str)
             self.VidAuidRes = Gtk.ListStore(str)
@@ -250,21 +254,22 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.SizesV = []
             self.ResV = []
             self.ResA = []
+            print('Getting Data..')
             for stream in self.vid.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
                 if f"{stream.resolution}" not in self.ResV:
                     self.VidVidRes.append([f"{stream.resolution}"])
                     self.ResV.append(f"{stream.resolution}")
                     self.SizesV.append(stream.filesize + self.vid.streams.filter(progressive = False, only_audio = True, file_extension='webm').last().filesize)
-                    print(stream.resolution)
+                    #print(stream.resolution)
             for stream in self.vid.streams.filter(type = "audio", file_extension='webm'):
                 if f"{stream.abr}" not in self.ResA:
                     self.VidAuidRes.append([f"{stream.abr}"])
                     self.ResA.append(f"{stream.abr}")
                     self.SizesA.append(stream.filesize)
-                    print(stream.abr)
+                    #print(stream.abr)
             self.VidTypeList.append(['Video'])
             self.VidTypeList.append(['Audio'])
-            print('70%')
+            print('Setting UI...')
             # cell R
             # type
             self.VidTypeBox.set_model(self.VidTypeList)
@@ -279,7 +284,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.VidResBox.add_attribute(renderer_textv, "text", 0)
             self.VidResBox.set_active(0)
             self.size_label_handler()
-            print('100%')
             # finishing loading process
             self.loading = 0
             self.loading_revealer.set_reveal_child(False)
@@ -300,6 +304,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         if self.connect_func() == False:
             return
         try:
+            print("Starting...")
             self.ListRequest = 1
             #func
             self.ListVidRes = Gtk.ListStore(str)
@@ -313,13 +318,13 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.LResA = []
             self.ListResV = [0 for j in range(self.l)]
             self.ListResA = [0 for j in range(self.l)]
-            print("list initializing done, downloading data...")
+            print("List Initialization Is Done, Downloading Data...")
             print("----------------------------------")
             i = 0
             for video in self.plist.videos:
                 vl = {}
                 al = {}
-                print(f'Vedeo {i}')
+                print(f'Video {i}')
                 for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
                     if stream.resolution not in list(vl.keys()):
                         vl[stream.resolution] = 0
@@ -344,7 +349,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 if x == self.l:
                     self.LResV.append(list(self.ListResV[0].keys())[i])
                     self.ListVidRes.append([f"{list(self.ListResV[0].keys())[i]}"])
-            print(f'Common Video Resolutions(For Global): {self.LResV}')
+            print(f'Common Video Resolutions (Being Used As A Global Options): {self.LResV}')
             for i in range(len(list(self.ListResA[0].keys()))):
                 x = 0
                 for y in range(self.l):
@@ -355,7 +360,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 if x == self.l:
                     self.LResA.append(list(self.ListResA[0].keys())[i])
                     self.ListAuidRes.append([f"{list(self.ListResA[0].keys())[i]}"])
-            print(f'Common Audio Bitrates(For Global): {self.LResA}') 
+            print(f'Common Audio Bitrates(Being Used As A Global Options): {self.LResA}') 
             self.ListNameLabel.set_label(self.plist.title)
             # setting combo boxes data
             """ for stream in self.plist.videos[0].streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
@@ -368,9 +373,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     self.ListAuidRes.append([f"{stream.abr}"])
                     self.LResA.append(f'{stream.abr}')
                     print(stream.abr) """
-            
             self.ListTypeList.append(['Video'])
             self.ListTypeList.append(['Audio'])
+            print("Setting UI")
             # cell R
             # type
             self.ListTypeBox.set_model(self.ListTypeList)
@@ -389,7 +394,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.loading_revealer.set_reveal_child(False)
             self.List_revealer.set_reveal_child(True)
             self.Carousel.scroll_to(self.List_revealer, True)
-            print("022f")
+            print("Done!")
             return
         except Exception as err:
             if err:
@@ -413,38 +418,42 @@ class MushroomWindow(Gtk.ApplicationWindow):
             return True
         except:
             print("Connection Failed")
-            self.Fail("Failed Due To Connection Cut")
+            self.Fail("Failed Due To Connection Error")
             return False
 
 
 
-    def islistq(self, *args):
+    def islistq(self, printT, *args):
         if os.path.isfile(ffmpeg):
             # if a vid related to a list
             if re.findall(".*youtube\.com/watch\?v\=.{11}&list\=.{34}.*", self.MainBuffer.get_text()) or re.findall(".*youtu\.be/.{11}\?list\=.{34}.*", self.MainBuffer.get_text()):
                 self.SubmitButton.set_label("Download Video")
                 self.ListSuggestionRevealer.set_reveal_child(True)
                 self.SubmitButton.set_sensitive(True)
-                print("a vid related to a list")
+                if printT:
+                    print("URL Type: ( List Related Video )")
                 return 0
             # if a playlist
             elif re.findall(".*youtube\.com/playlist\?list\=.{34}.*", self.MainBuffer.get_text()):
                 self.SubmitButton.set_label("Download Playlist")
                 self.ListSuggestionRevealer.set_reveal_child(False)
                 self.SubmitButton.set_sensitive(True)
-                print("playlist")
+                if printT:
+                    print("URL Type: ( Playlist )")
                 return 1
             # if a plain vid
             elif re.findall(".*youtube\.com/watch\?v\=.{11}.*", self.MainBuffer.get_text()) or re.findall(".*youtu\.be\/.{11}.*", self.MainBuffer.get_text()) and not (re.findall(".*youtube\.com/watch\?v\=.{11}&list\=.{34}.*", self.MainBuffer.get_text()) or re.findall(".*youtu.be/.{11}\?list\=.{34}.*", self.MainBuffer.get_text())):
                 self.ListSuggestionRevealer.set_reveal_child(False)
                 self.SubmitButton.set_sensitive(True)
                 self.SubmitButton.set_label("Download Video")
-                print("plain vid")
+                if printT:
+                    print("URL Type: ( Video )")
                 return 2
             else:
                 self.ListSuggestionRevealer.set_reveal_child(False)
                 self.SubmitButton.set_sensitive(False)
-                print("invalid url")
+                if printT:
+                    print("URL Type: ( Invalid URL )")
                 return 3
 
 
@@ -477,7 +486,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     def On_Vid_DownloadFunc(self):
         try:
-            print("???1")
+            print("Adding A Task")
+            #print(1)
             if self.VidTypeBox.get_active() == 0:
                 VidRes = self.ResV[self.VidResBox.get_active()]
                 VidType = "Video"
@@ -486,9 +496,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 VidRes = self.ResA[self.VidResBox.get_active()]
                 VidType = "Audio"
                 VidSize = self.SizesA[self.VidResBox.get_active()]
-            print("???2")
+            #print(2)
             self.AddToTasksDB(self.VidURL, VidRes, VidType, VidSize, self.VidName)
-            print("???3")
+            #print(3)
             self.vid_revealer.set_reveal_child(False)
             self.done_revealer.set_reveal_child(True)
             self.Carousel.scroll_to(self.done_revealer, True)
@@ -499,8 +509,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 return
 
 
+# TODO: Remake List Downloading Function
 
-    def On_List_DownloadFunc(self):
+    def On_List_DownloadFunc(self): # <----------- Waiting For A Remake
         # Check For No Selection
         try:
             unselected = 0
@@ -520,7 +531,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     return
             NoneToast.dismiss()
             threading.Thread(target = self.loading_func, daemon = True).start()
-            print("???1")
+            #print(1)
             if self.ListTypeBox.get_active() == 0:
                 ListRes = self.LResV[self.ListResBox.get_active()]
                 ListType = "Video"
@@ -602,27 +613,26 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 return
 
 
-
-
     @Gtk.Template.Callback()
     def Submit_Func(self, button):
+        x = self.islistq(printT = False)
         if os.path.isfile(ffmpeg):
-            if self.islistq() == 1:
+            if x == 1:
                 self.MainRevealer.set_reveal_child(False)
                 self.loading_revealer.set_reveal_child(True)
                 self.Carousel.scroll_to(self.loading_revealer, True)
                 self.loading = 1
                 threading.Thread(target = self.loading_func, daemon = True).start()
                 threading.Thread(target = self.Playlist_Data, daemon = True).start()
-                print("022")
-            elif self.islistq() == 2:
+                print("Submitted A Playlist Downloading Request")
+            elif x == 2:
                 self.MainRevealer.set_reveal_child(False)
                 self.loading_revealer.set_reveal_child(True)
                 self.Carousel.scroll_to(self.loading_revealer, True)
                 self.loading = 1
                 threading.Thread(target = self.loading_func, daemon=True).start()
                 threading.Thread(target = self.Video_Data, daemon=True).start()
-                print("023")
+                print("Submitted A Video Downloading Request")
 
     @Gtk.Template.Callback()
     def on_vid_type_change(self, combo):
@@ -655,7 +665,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     #@Gtk.Template.Callback()
     #def on_list_global_change(self, combo):
-        #return #######################################################################################
+        #return ########################################
 
     @Gtk.Template.Callback()
     def size_label_handler(self, *args):
@@ -748,7 +758,6 @@ class ListRow(Adw.ActionRow):
         self.CellRBox.pack_start(renderer_text, True)
         self.CellRBox.add_attribute(renderer_text, "text", 0)
         self.CellRBox.set_active(0)
-
 
         self.set_title_lines(1)
         self.set_subtitle_lines(1)
@@ -894,22 +903,22 @@ class DownloadsRow(Adw.ActionRow):
     def Download_Handler(self, *args):
         try:
             if os.path.isfile(data_dir + '/ffmpeg'):
-                print(self.Name)
+                #print(self.Name)
                 for i in range(len(self.Name)):
                     if not isalpha(self.Name[i]) and not isdigit(self.Name[i]):
                         self.Name = self.Name[0:i] + '_' + self.Name[i+1:len(self.Name)]
-                print(self.Name)
+                #print(self.Name)
                 yt = pytube.YouTube(self.URL)
-                print(1)
+                #print(1)
                 NIR = f'{self.Name}_{self.ID}_{self.Res}'
                 if self.Type == "Video":
                     stream = yt.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4', res= self.Res).first()
                     downloaded = 0
-                    print(21)
+                    #print(21)
                     with open(f'{DownloadCacheDir}{NIR}_VF.download', 'wb') as f:
                         streamX = pytube.request.stream(stream.url) # get an iterable stream
                         sa = yt.streams.filter(only_audio = True, file_extension = "webm").last().filesize
-                        print(31)
+                        #print(31)
                         while True:
                             if self.is_cancelled:
                                 # handling cancelation
@@ -919,28 +928,28 @@ class DownloadsRow(Adw.ActionRow):
                                 if chunk:
                                     f.write(chunk)
                                     downloaded += len(chunk)
-                                    print(len(chunk))
-                                    print(downloaded)
-                                    print(stream.filesize + sa)
+                                    #print(len(chunk))
+                                    #print(downloaded)
+                                    #print(stream.filesize + sa)
                                     self.ProgressLabel.set_label(f"%{(downloaded / (stream.filesize + sa))*100:.2f}")
                                     self.ProgressBar.set_fraction(downloaded / (stream.filesize + sa))
                                 else:
                                     # no more data
                                     break
-                        print(32)
+                        #print(32)
                         f.close()
-                    print(33)
+                    #print(33)
                     if self.is_cancelled:
                         os.remove(f'{DownloadCacheDir}{NIR}_VF.download')
                         #self.Cancel()
-                        print(3555)
+                        #print(3555)
                         return
                     else:
-                        print(34)
+                        #print(34)
                         with open(f'{DownloadCacheDir}{NIR}_AF.download', 'wb') as f:
                             streamA = yt.streams.filter(only_audio = True, file_extension = "webm").last()
                             streamA = pytube.request.stream(streamA.url)
-                            print(35)
+                            #print(35)
                             while True:
                                 if self.is_cancelled:
                                     # handling cancelation
@@ -951,20 +960,20 @@ class DownloadsRow(Adw.ActionRow):
                                         f.write(chunk)
                                         downloaded += len(chunk)
                                         self.ProgressLabel.set_label(f"%{(downloaded / (stream.filesize + sa))*100:.2f}")
-                                        print(len(chunk))
-                                        print(downloaded)
-                                        print(stream.filesize + sa)
+                                        #print(len(chunk))
+                                        #print(downloaded)
+                                        #print(stream.filesize + sa)
                                         self.ProgressBar.set_fraction(downloaded / (stream.filesize + sa))
                                     else:
                                         # no more data
                                         break
-                            print(36)
+                            #print(36)
                             f.close()
                         if self.is_cancelled:
                             os.remove(f'{DownloadCacheDir}{NIR}_AF.download')
                             #self.Cancel()
                         else:
-                            print(37)
+                            #print(37)
                             self.ProgressLabel.set_label("Almost Done")
                             threading.Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
                             AFname = f"{DownloadCacheDir}{NIR}_AF.webm"
@@ -981,7 +990,7 @@ class DownloadsRow(Adw.ActionRow):
                             self.ispulse = False
                             self.ProgressBar.set_fraction(1)
                             self.Done()
-                            print(38)
+                            #print(38)
                 else:
                     streamV = yt.streams.filter(type = "audio", abr = self.Res, file_extension = "webm").first()
                     downloaded = 0
@@ -1019,7 +1028,7 @@ class DownloadsRow(Adw.ActionRow):
                         self.ispulse = False
                         self.ProgressBar.set_fraction(1)
                         self.Done()
-                print('done')
+                print(f'Task #{self.ID}: Done')
                 return
             else:
                 self.ProgressLabel.set_label("  Unable to find ffmpeg")
@@ -1042,12 +1051,12 @@ class DownloadsRow(Adw.ActionRow):
             button.set_icon_name("media-playback-start-symbolic")
             button.set_css_classes(["Download-Button"])
             self.is_paused = True
-            print("Task: " + self.Name + f" ( {self.ID} )" + " --Paused")
+            print(f"Task #{self.ID}: {self.Name} --Paused")
         else:
             button.set_icon_name("media-playback-pause-symbolic")
             button.set_css_classes(["Pause-Button"])
             self.is_paused = False
-            print("Task: " + self.Name + f" ( {self.ID} )" + " --Resumed")
+            print(f"Task #{self.ID}: {self.Name} --Resumed")
         return
 
 
@@ -1164,7 +1173,7 @@ class MushroomApplication(Adw.Application):
     def Update_Download_Path(self, *args):
         with open(DefaultLocFileDir, 'r') as f:
             DefaultLocPATH = f.read()
-        print(DefaultLocPATH)
+        print("Location For New Downloads Is :" + DefaultLocPATH)
         f.close()
         return DefaultLocPATH
 
