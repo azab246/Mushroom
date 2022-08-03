@@ -816,7 +816,7 @@ class DownloadsRow(Adw.ActionRow):
         self.StopButton.set_css_classes(["Cancel-Button"])
         self.StopButton.connect("clicked", self.Cancel)
         self.PauseButton = Gtk.Button.new_from_icon_name("media-playback-pause-symbolic")
-        self.PauseButton.set_sensitive(True)######
+        self.PauseButton.set_sensitive(True)
         self.PauseButton.set_css_classes(["Pause-Button"])
         self.PauseButton.connect("clicked", self.Pause)
         self.ButtonBox.append(self.StopButton)
