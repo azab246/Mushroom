@@ -75,6 +75,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
     GlobalRevealer = Gtk.Template.Child()
     Nothing_D_Revealer = Gtk.Template.Child()
     Fail_Button = Gtk.Template.Child()
+    ListGlobalSwitch = Gtk.Template.Child()
     VidRequest = 0
     ListRequest = 0
 
@@ -228,10 +229,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             conn.close()
 
 
-
-
     #def UpdateHistory():
-
 
 
     def Video_Data(self, *args):
@@ -286,9 +284,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.size_label_handler()
             # finishing loading process
             self.loading = 0
-            self.loading_revealer.set_reveal_child(False)
-            self.vid_revealer.set_reveal_child(True)
-            self.Carousel.scroll_to(self.vid_revealer, True)
             self.VidURL = self.link
             return
         except Exception as err:
@@ -364,16 +359,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
             print(f'Common Audio Bitrates(Being Used As A Global Options): {self.LResA}') 
             self.ListNameLabel.set_label(self.plist.title)
             # setting combo boxes data
-            """ for stream in self.plist.videos[0].streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
-                if f"{stream.resolution}" not in self.LResV:
-                    self.ListVidRes.append([f"{stream.resolution}"])
-                    self.LResV.append(f"{stream.resolution}")
-                    print(stream.resolution)
-            for stream in self.plist.videos[0].streams.filter(type = "audio", file_extension='webm'):
-                if f'{stream.abr}' not in self.LResA:
-                    self.ListAuidRes.append([f"{stream.abr}"])
-                    self.LResA.append(f'{stream.abr}')
-                    print(stream.abr) """
             self.ListTypeList.append(['Video'])
             self.ListTypeList.append(['Audio'])
             print("Setting Up UI")
@@ -392,9 +377,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.ListResBox.set_active(0)
             # finishing loading process
             self.loading = 0
-            self.loading_revealer.set_reveal_child(False)
-            self.List_revealer.set_reveal_child(True)
-            self.Carousel.scroll_to(self.List_revealer, True)
             print("Done!")
             return
         except Exception as err:
@@ -404,10 +386,20 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 return 
 
     
-    def loading_func(self):
+    def loading_func(self, RevealerFrom, RevealerTo):
+        self.loading_revealer.set_reveal_child(True)
+        self.Carousel.scroll_to(self.loading_revealer, True)
+        RevealerFrom.set_reveal_child(False)
+
+        self.loading = 1
+
         while self.loading == 1:
             self.LoadingProgressBar.pulse()
             time.sleep(0.25)
+
+        RevealerTo.set_reveal_child(True)
+        self.Carousel.scroll_to(RevealerTo, True)
+        self.loading_revealer.set_reveal_child(False)
 
 
 
@@ -510,11 +502,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 return
 
 
-    # TODO: Remake List Downloading Function
-
-    def On_List_DownloadFunc(self): # <----------- Waiting For A Remake
-        # Check For No Selection
+    def On_List_DownloadFunc(self): # <----------- Waiting For Test
         try:
+            # Some Checks
             unselected = 0
             for row in rows:
                 if row.check.get_active() == False:
@@ -524,15 +514,13 @@ class MushroomWindow(Gtk.ApplicationWindow):
             if unselected == len(rows):
                 threading.Thread(target = self.Toast_Handler, args = [NoneToast], daemon = True).start()
                 return
-            self.List_revealer.set_reveal_child(False)
-            self.loading_revealer.set_reveal_child(True)
-            self.Carousel.scroll_to(self.loading_revealer, True)
-            self.loading = 1
             if self.connect_func() == False:
-                    return
+                return
             NoneToast.dismiss()
-            threading.Thread(target = self.loading_func, daemon = True).start()
-            #print(1)
+            # Setting Loading 
+            self.loading = 1
+            threading.Thread(target = self.loading_func, args = [self.List_revealer, self.done_revealer], daemon = True).start()
+            # Getting Download Type
             if self.ListTypeBox.get_active() == 0:
                 ListRes = self.LResV[self.ListResBox.get_active()]
                 ListType = "Video"
@@ -540,73 +528,22 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 ListRes = self.LResA[self.ListResBox.get_active()]
                 ListType = "Audio"
             print("Selected: " + str(ListRes) + " " + ListType)
-            Sizes = []
+            # Getting Request Data 
             i = 0
-            for video in self.plist.videos:
-                print("f")
+            Videos = self.plist.videos
+            for video in Videos:
                 if rows[i].check.get_active() == True:
                     if ListType == "Video":
-                        ListRes = self.LResV[self.ListResBox.get_active()]
-                        try:
-                            for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
-                                Sizes.append(stream.filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='webm').last())
-                                print(str(stream) + str("t1"))
-                                break
-                            self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
-                        except IndexError:
-                            print("Failed To Get That Res Trying Another..")
-                            try:
-                                ListRes = self.LResV[self.ListResBox.get_active() + 1]
-                                for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
-                                    Sizes.append(stream.filesize  + video.streams.filter(progressive = False, only_audio = True, file_extension='webm').last())
-                                    print(str(stream) + str("t2"))
-                                    break
-                                self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
-                            except IndexError:
-                                print("Failed To Get That Res Trying Another..")
-                                try:
-                                    ListRes = self.LResV[self.ListResBox.get_active() - 1]
-                                    for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
-                                        Sizes.append(stream.filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='webm').last())
-                                        print(str(stream) + str("t3"))
-                                        break
-                                    self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
-                                except IndexError:
-                                    print("Passing: " + rows[i].Title + "  (Cant Find Even Near-Specified Res)")
-                                    Sizes.append("0")
-                                    pass
+                        ListRes = self.LResV[self.ListResBox.get_active()] if self.ListGlobalSwitch.get_state() == True else list(rows[i].RListV.keys())[rows[i].CellRBox.get_active()]
+                        stream = video.streams.filter(progressive = False, only_video = True, type = "video", res = ListRes, file_extension='mp4').first()
+                        Size = stream.filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='webm').last()
                     else:
-                        try:
-                            ListRes = self.LResA[self.ListResBox.get_active()]
-                            for stream in video.streams.filter(type = "audio", abr = ListRes , file_extension = "webm"):
-                                Sizes.append(stream.filesize)
-                                break
-                            self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
-                        except IndexError:
-                            try:
-                                ListRes = self.LResA[self.ListResBox.get_active() + 1]
-                                for stream in video.streams.filter(type = "audio", abr = ListRes, file_extension = "webm"):
-                                    Sizes.append(stream.filesize)
-                                    break
-                                self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
-                            except IndexError:
-                                try :
-                                    ListRes = self.LResA[self.ListResBox.get_active() - 1]
-                                    for stream in video.streams.filter(type = "audio", abr = ListRes, file_extension = "webm"):
-                                        Sizes.append(stream.filesize)
-                                        break
-                                    self.AddToTasksDB(rows[i].URL, ListRes, ListType, Sizes[i], rows[i].Title)
-                                except IndexError:
-                                    print("Passing: " + rows[i].Title + "  (Cant Find Even Near-Specified Res)")
-                                    Sizes.append("0")
-                                    pass
+                        ListRes = self.LResA[self.ListResBox.get_active()] if self.ListGlobalSwitch.get_state() == True else list(rows[i].RListA.keys())[rows[i].CellRBox.get_active()]
+                        stream = video.streams.filter(type = "audio", abr = ListRes , file_extension = "webm").first()
+                        Size = stream.filesize
+                    self.AddToTasksDB(rows[i].URL, ListRes, ListType, Size, rows[i].Title)
                 i += 1
-            print("???3")
             self.loading = 0
-            self.List_revealer.set_reveal_child(True)
-            self.loading_revealer.set_reveal_child(False)
-            self.done_revealer.set_reveal_child(True)
-            self.Carousel.scroll_to(self.done_revealer, True)
         except Exception as err:
             if err:
                 self.loading = 0
@@ -619,21 +556,14 @@ class MushroomWindow(Gtk.ApplicationWindow):
         x = self.islistq(printT = False)
         if os.path.isfile(ffmpeg):
             if x == 1:
-                self.MainRevealer.set_reveal_child(False)
-                self.loading_revealer.set_reveal_child(True)
-                self.Carousel.scroll_to(self.loading_revealer, True)
-                self.loading = 1
-                threading.Thread(target = self.loading_func, daemon = True).start()
+                threading.Thread(target = self.loading_func, args = [self.MainRevealer, self.List_revealer], daemon = True).start()
                 threading.Thread(target = self.Playlist_Data, daemon = True).start()
                 print("Submitted A Playlist Downloading Request")
             elif x == 2:
-                self.MainRevealer.set_reveal_child(False)
-                self.loading_revealer.set_reveal_child(True)
-                self.Carousel.scroll_to(self.loading_revealer, True)
-                self.loading = 1
-                threading.Thread(target = self.loading_func, daemon=True).start()
+                threading.Thread(target = self.loading_func, args = [self.MainRevealer, self.vid_revealer], daemon=True).start()
                 threading.Thread(target = self.Video_Data, daemon=True).start()
                 print("Submitted A Video Downloading Request")
+
 
     @Gtk.Template.Callback()
     def on_vid_type_change(self, combo):
@@ -651,22 +581,17 @@ class MushroomWindow(Gtk.ApplicationWindow):
     def on_list_type_change(self, combo):
         if self.ListTypeBox.get_active() == 0:
             self.ListResBox.set_model(self.ListVidRes)
-            #self.ListResLabel.set_label("Use Global")
             for i in range(len(rows)):
                 rows[i].CellRBox.set_model(rows[i].VidResStore)
                 rows[i].CellRBox.set_active(0)
             self.ListResBox.set_active(0)
         else:
             self.ListResBox.set_model(self.ListAuidRes)
-            #self.ListResLabel.set_label("Bitrate :")
             for i in range(len(rows)):
                 rows[i].CellRBox.set_model(rows[i].AudResStore)
                 rows[i].CellRBox.set_active(0)
             self.ListResBox.set_active(0)
 
-    #@Gtk.Template.Callback()
-    #def on_list_global_change(self, combo):
-        #return ########################################
 
     @Gtk.Template.Callback()
     def size_label_handler(self, *args):
@@ -674,6 +599,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.VidSizeLabel.set_label(f" Size : {self.size_format(self.SizesV[self.VidResBox.get_active()])}")
         else:
             self.VidSizeLabel.set_label(f" Size : {self.size_format(self.SizesA[self.VidResBox.get_active()])}")
+
 
     @Gtk.Template.Callback()
     def On_Go_Back(self, button):
@@ -692,6 +618,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.ListTypeList.clear()
             self.ListResBox.clear()
             self.ListTypeBox.clear()
+            
             for i in range(len(rows)):
                 try:
                     rows[i].destroy_row(self.Playlist_Content_Group)
@@ -720,13 +647,16 @@ class MushroomWindow(Gtk.ApplicationWindow):
         self.fail_revealer.set_reveal_child(False)
         print("Done")
 
+
     @Gtk.Template.Callback()
     def On_Vid_Download(self, button):
         threading.Thread(target = self.On_Vid_DownloadFunc, daemon = True).start()
 
+
     @Gtk.Template.Callback()
     def On_List_Download(self, button):
         threading.Thread(target = self.On_List_DownloadFunc, daemon = True).start()
+
 
     @Gtk.Template.Callback()
     def on_list_global_switch(self, switch, *args):
@@ -746,7 +676,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
 class ListRow(Adw.ActionRow):
     def __init__(self, url , title, author, lengthf, views, Playlist_Content_Group, ListV, ListA):
         super().__init__()
-
         self.RListV = ListV
         self.RListA = ListA
         self.URL = url
@@ -788,13 +717,18 @@ class ListRow(Adw.ActionRow):
         Playlist_Content_Group.add(self)
 
 
-
     def destroy_row(self, Playlist_Content_Group):
+        self.VidResStore.clear()
+        self.AudResStore.clear()
+        try:
+            self.remove(self.CellRBox)
+            self.CellRBox.run_dispose()
+        except Exception as e:
+            print(str(e))
+            pass
         try:
             self.remove(self.check)
-            self.remove(self.CellRBox)
             self.check.run_dispose()
-            self.CellRBox.run_dispose()
         except Exception as e:
             print(str(e))
             pass
@@ -809,8 +743,7 @@ class ListRow(Adw.ActionRow):
         self.Author = None
         self.RListV = None
         self.RListA = None
-        self.VidResStore = None
-        self.AudResStore = None
+
 
     def on_list_row_selection(self, SB, *args):
         if SB.get_active() == False:
@@ -912,8 +845,11 @@ class DownloadsRow(Adw.ActionRow):
         self.set_child(self.MainBox)
         threading.Thread(target = self.Download_Handler, daemon = True).start()
 
+# TODO: Create Pause, Resume and Stop Handling For Row Buttons 
+# TODO: Create FFMPEG Queues   -- Max 1
+# TODO: Create Download Queues -- Max 3-5
 
-    def Download_Handler(self, *args):
+    def Download_Handler(self, *args): # <------- need some polishing
         try:
             if os.path.isfile(data_dir + '/ffmpeg'):
                 #print(self.Name)
@@ -1226,7 +1162,7 @@ class MushroomApplication(Adw.Application):
         about = AboutDialog(self.props.active_window)
 
     def on_DefaultLoc_action(self, widget, _):
-        # Setting The Dialog
+        """Callback For app.DefaultLoc action."""
         self.DefaultLocation = Location_Message_Dialog(self.props.active_window)
 
 
