@@ -477,7 +477,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
 
 
-    def On_Vid_DownloadFunc(self):
+    def On_Vid_DownloadFunc(self, button):
+        button.set_sensitive(False)
         try:
             print("Adding A Task")
             #print(1)
@@ -499,10 +500,11 @@ class MushroomWindow(Gtk.ApplicationWindow):
             if err:
                 self.loading = 0
                 self.Fail(err)
-                return
+        button.set_sensitive(True)
 
 
-    def On_List_DownloadFunc(self): # <----------- Waiting For Test
+    def On_List_DownloadFunc(self, button): # <----------- Waiting For Test
+        button.set_sensitive(False)
         try:
             # Some Checks
             unselected = 0
@@ -513,8 +515,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
             NoneToast.set_timeout(3)
             if unselected == len(rows):
                 threading.Thread(target = self.Toast_Handler, args = [NoneToast], daemon = True).start()
+                button.set_sensitive(True)
                 return
             if self.connect_func() == False:
+                button.set_sensitive(True)
                 return
             NoneToast.dismiss()
             # Setting Loading 
@@ -548,11 +552,14 @@ class MushroomWindow(Gtk.ApplicationWindow):
             if err:
                 self.loading = 0
                 self.Fail(err)
+                button.set_sensitive(True)
                 return
+        button.set_sensitive(True)
 
 
     @Gtk.Template.Callback()
     def Submit_Func(self, button):
+        button.set_sensitive(False)
         x = self.islistq(printT = False)
         if os.path.isfile(ffmpeg):
             if x == 1:
@@ -563,6 +570,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 threading.Thread(target = self.loading_func, args = [self.MainRevealer, self.vid_revealer], daemon=True).start()
                 threading.Thread(target = self.Video_Data, daemon=True).start()
                 print("Submitted A Video Downloading Request")
+        button.set_sensitive(True)
 
 
     @Gtk.Template.Callback()
@@ -603,6 +611,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def On_Go_Back(self, button):
+        button.set_sensitive(False)
         print("Cleaning...")
         if self.VidRequest == 1:
             self.VidVidRes.clear()
@@ -646,16 +655,17 @@ class MushroomWindow(Gtk.ApplicationWindow):
         self.done_revealer.set_reveal_child(False)
         self.fail_revealer.set_reveal_child(False)
         print("Done")
+        button.set_sensitive(True)
 
 
     @Gtk.Template.Callback()
     def On_Vid_Download(self, button):
-        threading.Thread(target = self.On_Vid_DownloadFunc, daemon = True).start()
+        threading.Thread(target = self.On_Vid_DownloadFunc, args = [button], daemon = True).start()
 
 
     @Gtk.Template.Callback()
     def On_List_Download(self, button):
-        threading.Thread(target = self.On_List_DownloadFunc, daemon = True).start()
+        threading.Thread(target = self.On_List_DownloadFunc, args = [button], daemon = True).start()
 
 
     @Gtk.Template.Callback()
