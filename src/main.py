@@ -205,7 +205,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
           ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)
           ''')
         #print(res)
-        self.db.execute("INSERT INTO Downloads (url, res, type, location, added_on, size, name) VALUES (?, ?, ?, ?, ?, ?, ?)", (url, str(res), dtype, MushroomApplication.Update_Download_Path(MushroomApplication), dt, fsize, name))
+        self.db.execute("INSERT INTO Downloads (url, res, type, location, added_on, size, name) VALUES (?, ?, ?, ?, ?, ?, ?)", (url, str(res), dtype, Location_Message_Dialog.Update_Download_Path(False), dt, fsize, name))
         conn.commit()
         conn.close()
         threading.Thread(target = self.UpdateDownloads, daemon = True).start()
@@ -258,13 +258,13 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     self.VidVidRes.append([f"{stream.resolution}"])
                     self.ResV.append(f"{stream.resolution}")
                     self.SizesV.append(stream.filesize + self.vid.streams.filter(progressive = False, only_audio = True, file_extension='webm').last().filesize)
-                    #print(stream.resolution)
+                    print(stream.resolution)
             for stream in self.vid.streams.filter(type = "audio", file_extension='webm'):
                 if f"{stream.abr}" not in self.ResA:
                     self.VidAuidRes.append([f"{stream.abr}"])
                     self.ResA.append(f"{stream.abr}")
                     self.SizesA.append(stream.filesize)
-                    #print(stream.abr)
+                    print(stream.abr)
             self.VidTypeList.append(['Video'])
             self.VidTypeList.append(['Audio'])
             print('Setting Up UI...')
@@ -285,11 +285,13 @@ class MushroomWindow(Gtk.ApplicationWindow):
             # finishing loading process
             self.loading = 0
             self.VidURL = self.link
+            print("Successfully Got Video Data")
             return
         except Exception as err:
             if err:
                 self.loading = 0
                 self.Fail(err)
+                print("Failed To Get Video Data")
                 return
 
 
@@ -1057,7 +1059,7 @@ class Location_Message_Dialog(Gtk.MessageDialog):
         # Setting Dialog Widgets
         self.DefaultLocEntry = Gtk.Entry()
         self.DefaultLocEntry.set_margin_top(15)
-        DefaultLocPATH = self.Update_Download_Path()
+        DefaultLocPATH = self.Update_Download_Path(True)
         if len(DefaultLocPATH) > 52:
             self.DefaultLocEntry.set_placeholder_text(DefaultLocPATH[:52]+"...")
         else:
@@ -1093,10 +1095,11 @@ class Location_Message_Dialog(Gtk.MessageDialog):
         self.close()
 
 
-    def Update_Download_Path(self, *args):
+    def Update_Download_Path(self, printflag, *args):
         with open(DefaultLocFileDir, 'r') as f:
             DefaultLocPATH = f.read()
-        print("Location For New Downloads Is :" + DefaultLocPATH)
+        if printflag:
+            print("Location For New Downloads Is :" + DefaultLocPATH)
         f.close()
         return DefaultLocPATH
 
