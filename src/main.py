@@ -76,6 +76,12 @@ class MushroomWindow(Gtk.ApplicationWindow):
     Nothing_D_Revealer = Gtk.Template.Child()
     Fail_Button = Gtk.Template.Child()
     ListGlobalSwitch = Gtk.Template.Child()
+    TMLable = Gtk.Template.Child()
+    H_D_Carousel = Gtk.Template.Child()
+    Downloads_Revealer = Gtk.Template.Child()
+    History_Revealer = Gtk.Template.Child()
+    History_List = Gtk.Template.Child()
+    Nothing_H_Revealer = Gtk.Template.Child()
     VidRequest = 0
     ListRequest = 0
 
@@ -220,12 +226,16 @@ class MushroomWindow(Gtk.ApplicationWindow):
             queue = self.db.execute("SELECT * FROM Downloads")
             for video in queue:
                 if str(video[7]) not in list(self.Download_Rows.keys()):
-                    if len(list(self.Download_Rows.keys())) == 0:
-                        self.Nothing_D_Revealer.set_reveal_child(False)
                     print("Adding To Downloads List : " + video[6] + f"  ( {video[2]} )")
                     self.Download_Rows[str(video[7])] = DownloadsRow(video[0], video[1], video[2], video[3], video[4], video[5], video[6], video[7])
                     self.Downloads_List.prepend(self.Download_Rows[str(video[7])])
                     self.TaskManagerPage.set_needs_attention(True)
+            if len(list(self.Download_Rows.keys())) == 0:
+                self.Nothing_D_Revealer.set_reveal_child(True)
+                self.H_D_Carousel.set_valign(3)
+            else:
+                self.Nothing_D_Revealer.set_reveal_child(False)
+                self.H_D_Carousel.set_valign(1)
             conn.close()
 
 
@@ -684,7 +694,22 @@ class MushroomWindow(Gtk.ApplicationWindow):
                                             if self.ListTypeBox.get_active() == 0 else 
                                             rows[i].RListA[self.LResA[self.ListResBox.get_active()]])             
 
-
+    @Gtk.Template.Callback()
+    def On_H_D_Button_Clicked(self, button, *args):
+        if button.get_icon_name() == 'preferences-system-time-symbolic':
+            button.set_icon_name('document-save-symbolic')
+            self.TMLable.set_label("History ")
+            self.Downloads_Revealer.set_reveal_child(False)
+            self.H_D_Carousel.scroll_to(self.History_Revealer, True)
+            self.History_Revealer.set_reveal_child(True)
+            
+        else:
+            button.set_icon_name('preferences-system-time-symbolic')
+            self.TMLable.set_label("Downloads")
+            self.Downloads_Revealer.set_reveal_child(True)
+            self.History_Revealer.set_reveal_child(False)
+            self.H_D_Carousel.scroll_to(self.Downloads_Revealer, True)
+    
 class ListRow(Adw.ActionRow):
     def __init__(self, url , title, author, lengthf, views, Playlist_Content_Group, ListV, ListA):
         super().__init__()

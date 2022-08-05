@@ -523,72 +523,83 @@
                   <property name="title">Task Manager</property>
                   <property name="icon-name">edit-paste-symbolic</property>
                   <property name="child">
-                    <object class="AdwCarousel">
-                      <property name="vexpand">True</property>
+                    <object class="GtkScrolledWindow">
                       <property name="hexpand">True</property>
-                      <property name="interactive">True</property>
-                      <property name="spacing">100</property>
                       <child>
-                        <object class="GtkScrolledWindow">
+                        <object class="AdwClamp">
+                          <property name="maximum-size">1000</property>
+                          <property name="tightening-threshold">500</property>
                           <property name="hexpand">True</property>
+                          <property name="vexpand">True</property>
                           <child>
-                            <object class="AdwClamp">
-                              <property name="maximum-size">1000</property>
-                              <property name="tightening-threshold">500</property>
+                            <object class="GtkBox">
                               <property name="hexpand">True</property>
+                              <property name="vexpand">True</property>
+                              <property name="orientation">vertical</property>
+                              <property name="margin-bottom">36</property>
                               <child>
                                 <object class="GtkBox">
-                                  <property name="hexpand">True</property>
-                                  <property name="orientation">vertical</property>
-                                  <property name="margin-bottom">36</property>
+                                  <property name="halign">center</property>
+                                  <property name="spacing">15</property>
                                   <child>
-                                    <object class="GtkBox">
-                                      <property name="halign">center</property>
-                                      <property name="spacing">15</property>
-                                      <child>
-                                        <object class="GtkButton" id="History_Downloads">
-                                          <property name="icon-name">preferences-system-time-symbolic</property>
-                                          <property name="margin-top">36</property>
-                                          <property name="margin-bottom">36</property>
-                                          <style>
-                                            <class name="circular"/>
-                                          </style>
-                                        </object>
-                                      </child>
-                                      <child>
-                                        <object class="GtkRevealer" id="TMLableRevealer">
-                                          <property name="transition-duration">150</property>
-                                          <property name="transition-type">1</property>
-                                          <property name="reveal-child">True</property>
-                                          <child>
-                                            <object class="GtkLabel">
-                                              <property name="hexpand">True</property>
-                                              <property name="margin-top">36</property>
-                                              <property name="margin-bottom">36</property>
-                                              <property name="margin-end">15</property>
-                                              <property name="label">Downloads</property>
-                                              <style>
-                                                <class name="title-1"/>
-                                              </style>
-                                            </object>
-                                          </child>
-                                        </object>
-                                      </child>
+                                    <object class="GtkButton">
+                                      <property name="icon-name">preferences-system-time-symbolic</property>
+                                      <property name="margin-top">36</property>
+                                      <property name="margin-bottom">36</property>
+                                      <property name="tooltip-text">View Downloads/History</property>
+                                      <signal name="clicked" handler="On_H_D_Button_Clicked"/>
+                                      <style>
+                                        <class name="circular"/>
+                                      </style>
                                     </object>
                                   </child>
+                                  <child>
+                                    <object class="GtkLabel" id="TMLable">
+                                      <property name="hexpand">True</property>
+                                      <property name="xalign">0.4</property>
+                                      <property name="width-chars">9</property>
+                                      <property name="margin-top">36</property>
+                                      <property name="margin-bottom">36</property>
+                                      <property name="margin-end">15</property>
+                                      <property name="label">Downloads</property>
+                                      <style>
+                                        <class name="title-1"/>
+                                      </style>
+                                    </object>
+                                  </child>
+                                </object>
+                              </child>
+                              <child>
+                                <object class="AdwCarousel" id="H_D_Carousel">
+                                  <property name="vexpand">True</property>
+                                  <property name="hexpand">True</property>
+                                  <property name="valign">center</property>
+                                  <property name="interactive">False</property>
+                                  <property name="allow-scroll-wheel">False</property>
+                                  <property name="allow-mouse-drag">False</property>
+                                  <property name="orientation">vertical</property>
+                                  <property name="spacing">300</property>
                                   <child>
                                     <object class="GtkRevealer" id="Downloads_Revealer">
                                       <property name="transition-duration">150</property>
                                       <property name="transition-type">1</property>
                                       <property name="reveal-child">True</property>
+                                      <property name="vexpand">True</property>
+                                      <property name="hexpand">True</property>
                                       <property name="child">
                                         <object class="GtkBox">
+                                          <property name="orientation">vertical</property>
+                                          <property name="vexpand">True</property>
+                                          <property name="hexpand">True</property>
                                           <child>
                                             <object class="GtkBox" id="Downloads_List">
                                               <property name="orientation">vertical</property>
                                               <property name="margin-start">20</property>
                                               <property name="margin-end">20</property>
                                               <property name="spacing">15</property>
+                                              <property name="vexpand">True</property>
+                                              <property name="hexpand">True</property>
+                                              <property name="valign">start</property>
                                             </object>
                                           </child>
                                           <child>
@@ -596,6 +607,8 @@
                                               <property name="transition-duration">150</property>
                                               <property name="transition-type">1</property>
                                               <property name="reveal-child">True</property>
+                                              <property name="vexpand">True</property>
+                                              <property name="hexpand">True</property>
                                               <property name="child">
                                                 <object class="AdwStatusPage">
                                                   <property name="icon-name">checkbox-checked-symbolic</property>
@@ -612,15 +625,25 @@
                                     </object>
                                   </child>
                                   <child>
-                                    <object class="GtkRevealer" id="History_Revealer">    <!--TODO : CONVERT THE PAGE FROM REVEALERS TO STACK-->
-                                      <property name="transition-duration">150</property> <!--THEN MAKE THE ACTUAL HISTORY FUNCTIONS  -->
+                                    <object class="GtkRevealer" id="History_Revealer">
+                                      <property name="transition-duration">150</property>
                                       <property name="transition-type">1</property>
                                       <property name="reveal-child">False</property>
+                                      <property name="vexpand">True</property>
+                                      <property name="hexpand">True</property>
+                                      <property name="valign">center</property>
                                       <child>
                                         <object class="GtkBox">
+                                          <property name="orientation">vertical</property>
+                                          <property name="valign">center</property>
+                                          <property name="vexpand">True</property>
+                                          <property name="hexpand">True</property>
                                           <child>
                                             <object class="GtkBox" id="History_List">
                                               <property name="orientation">vertical</property>
+                                              <property name="valign">start</property>
+                                              <property name="vexpand">True</property>
+                                              <property name="hexpand">True</property>
                                               <property name="margin-start">20</property>
                                               <property name="margin-end">20</property>
                                               <property name="spacing">15</property>
@@ -631,13 +654,17 @@
                                               <property name="transition-duration">150</property>
                                               <property name="transition-type">1</property>
                                               <property name="reveal-child">True</property>
+                                              <property name="valign">center</property>
+                                              <property name="vexpand">True</property>
+                                              <property name="hexpand">True</property>
                                               <child>
                                                 <object class="AdwStatusPage">
                                                   <property name="icon-name">appointment-new-symbolic</property>
                                                   <property name="title" translatable="yes">Things Are Quiet Here</property>
-                                                  <property name="description" translatable="yes">You Haven't Downloaded Any Thing Yet, Finish Some Downloads First</property>
+                                                  <property name="description" translatable="yes">You Haven't Downloaded Anything Yet, Finish Some Downloads First</property>
                                                   <property name="vexpand">True</property>
                                                   <property name="hexpand">True</property>
+                                                  <property name="valign">center</property>
                                                 </object>
                                               </child>
                                             </object>
