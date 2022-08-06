@@ -1114,6 +1114,14 @@ class DownloadsRow(Adw.ActionRow):
 
 
 
+class HistoryRow(Adw.ActionRow):
+    def __init__(self, VID):
+        super().__init__()
+
+    def Destroy(self, *args):
+        return
+
+
 
 class AboutDialog(Gtk.AboutDialog):
     def __init__(self, parent):
