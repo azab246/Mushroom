@@ -542,12 +542,14 @@
                                 <object class="GtkBox">
                                   <property name="halign">center</property>
                                   <property name="spacing">15</property>
+                                  
                                   <child>
                                     <object class="GtkButton">
                                       <property name="icon-name">preferences-system-time-symbolic</property>
                                       <property name="margin-top">36</property>
                                       <property name="margin-bottom">36</property>
-                                      <property name="tooltip-text">View Downloads/History</property>
+                                      <property name="margin-start">60</property>
+                                      <property name="tooltip-text">View History</property>
                                       <signal name="clicked" handler="On_H_D_Button_Clicked"/>
                                       <style>
                                         <class name="circular"/>
@@ -557,15 +559,34 @@
                                   <child>
                                     <object class="GtkLabel" id="TMLable">
                                       <property name="hexpand">True</property>
-                                      <property name="xalign">0.4</property>
-                                      <property name="width-chars">9</property>
+                                      <property name="xalign">0.5</property>
                                       <property name="margin-top">36</property>
                                       <property name="margin-bottom">36</property>
-                                      <property name="margin-end">15</property>
+                                      <property name="margin-end">10</property>
                                       <property name="label">Downloads</property>
                                       <style>
                                         <class name="title-1"/>
                                       </style>
+                                    </object>
+                                  </child>
+                                  <child>
+                                    <object class="GtkRevealer" id="ClearHistory_Revealer">
+                                      <property name="transition-duration">80</property>
+                                      <property name="transition-type">1</property>
+                                      <child>
+                                        <object class="GtkButton" id="ClearHistory_Button">
+                                          <property name="icon-name">user-trash-symbolic</property>
+                                          <property name="margin-top">36</property>
+                                          <property name="margin-bottom">36</property>
+                                          <property name="margin-end">20</property>
+                                          <property name="tooltip-text">Clear History</property>
+                                          <signal name="clicked" handler="Clear_History"/>
+                                          <style>
+                                            <class name="Cancel-Button"/>
+                                            <class name="circular"/>
+                                          </style>
+                                        </object>
+                                      </child>
                                     </object>
                                   </child>
                                 </object>

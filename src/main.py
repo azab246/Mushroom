@@ -82,6 +82,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
     History_Revealer = Gtk.Template.Child()
     History_List = Gtk.Template.Child()
     Nothing_H_Revealer = Gtk.Template.Child()
+    ClearHistory_Revealer = Gtk.Template.Child()
+    ClearHistory_Button = Gtk.Template.Child()
     VidRequest = 0
     ListRequest = 0
 
@@ -239,7 +241,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 self.H_D_Carousel.set_valign(1)
             conn.close()
 
-
+    # TODO: Make Clear History Button not to be Sensitive in Case that there
+    #       Ist A Data In  History To Clear 
     #def UpdateHistory(self, *args):
 
 
@@ -721,22 +724,35 @@ class MushroomWindow(Gtk.ApplicationWindow):
                                             if self.ListTypeBox.get_active() == 0 else 
                                             rows[i].RListA[self.LResA[self.ListResBox.get_active()]])             
 
+
     @Gtk.Template.Callback()
     def On_H_D_Button_Clicked(self, button, *args):
         if button.get_icon_name() == 'preferences-system-time-symbolic':
             button.set_icon_name('document-save-symbolic')
-            self.TMLable.set_label("History ")
+            self.TMLable.set_label("  History")
+            button.set_tooltip_text("View Downloads")
             self.Downloads_Revealer.set_reveal_child(False)
             self.H_D_Carousel.scroll_to(self.History_Revealer, True)
             self.History_Revealer.set_reveal_child(True)
+            self.ClearHistory_Revealer.set_reveal_child(True)
+            self.ClearHistory_Button.set_margin_end(60)
             
         else:
             button.set_icon_name('preferences-system-time-symbolic')
             self.TMLable.set_label("Downloads")
+            button.set_tooltip_text("View History")
             self.Downloads_Revealer.set_reveal_child(True)
             self.History_Revealer.set_reveal_child(False)
             self.H_D_Carousel.scroll_to(self.Downloads_Revealer, True)
-    
+            self.ClearHistory_Revealer.set_reveal_child(False)
+            self.ClearHistory_Button.set_margin_end(20)
+
+
+    @Gtk.Template.Callback()
+    def Clear_History(self, button, *args):
+        return
+
+
 class ListRow(Adw.ActionRow):
     def __init__(self, url , title, author, lengthf, views, Playlist_Content_Group, ListV, ListA):
         super().__init__()
@@ -1051,7 +1067,12 @@ class DownloadsRow(Adw.ActionRow):
                 #self.Cancel()
         except Exception as e:
             print(e)
-            # handling FAILURE
+            self.ProgressLabel.set_label("Failed")
+            self.ProgressBar.set_css_classes(['Progress-Fail'])
+            time.sleep(1)
+            self.ProgressLabel.set_label("  Moving To History")
+            time.sleep(4)
+            # handle moving to history and call cancel function
         # changing states
 
 
