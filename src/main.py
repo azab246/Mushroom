@@ -217,6 +217,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         threading.Thread(target = self.UpdateDownloads, daemon = True).start()
 
 
+    #def AddToHistoryDB(self, ID):
 
 
     def UpdateDownloads(self, *args):
@@ -239,7 +240,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             conn.close()
 
 
-    #def UpdateHistory():
+    #def UpdateHistory(self, *args):
 
 
     def Video_Data(self, *args):
