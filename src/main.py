@@ -326,6 +326,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.LResA = []
             self.ListResV = [0 for j in range(self.l)]
             self.ListResA = [0 for j in range(self.l)]
+            if self.l == 0:
+                self.loading = 0
+                self.Fail('Empty List') 
+                return
             print("List Initialization Is Done, Downloading Data...")
             print("----------------------------------")
             i = 0
@@ -582,6 +586,20 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 threading.Thread(target = self.loading_func, args = [self.MainRevealer, self.vid_revealer], daemon=True).start()
                 threading.Thread(target = self.Video_Data, daemon=True).start()
                 print("Submitted A Video Downloading Request")
+            elif x == 3:
+                return
+            elif x == 0:
+                if self.SuggestionCheck.get_active():
+                    threading.Thread(target = self.loading_func, args = [self.MainRevealer, self.List_revealer], daemon = True).start()
+                    threading.Thread(target = self.Playlist_Data, daemon = True).start()
+                    print("Submitted A Playlist Downloading Request")
+                    self.ListSuggestionRevealer.set_reveal_child(False)
+                    self.SuggestionCheck.set_active(False)
+                else:
+                    threading.Thread(target = self.loading_func, args = [self.MainRevealer, self.vid_revealer], daemon=True).start()
+                    threading.Thread(target = self.Video_Data, daemon=True).start()
+                    print("Submitted A Video Downloading Request")
+                    self.ListSuggestionRevealer.set_reveal_child(False)
         button.set_sensitive(True)
 
 
@@ -670,6 +688,14 @@ class MushroomWindow(Gtk.ApplicationWindow):
         button.set_sensitive(True)
 
 
+    @Gtk.Template.Callback()
+    def On_Whole_List_Check_Label_Change(self, button):
+        if button.get_active():
+            self.SubmitButton.set_label("Download Playlist")
+        else:
+            self.SubmitButton.set_label("Download Video")
+
+    
     @Gtk.Template.Callback()
     def On_Vid_Download(self, button):
         threading.Thread(target = self.On_Vid_DownloadFunc, args = [button], daemon = True).start()
@@ -1018,6 +1044,9 @@ class DownloadsRow(Adw.ActionRow):
                 return
             else:
                 self.ProgressLabel.set_label("  Unable to find ffmpeg")
+                time.sleep(5)
+                threading.Thread(target = self.Download_Handler, daemon = True).start()
+                return
                 #self.Cancel()
         except Exception as e:
             print(e)
@@ -1120,7 +1149,7 @@ class Location_Message_Dialog(Gtk.MessageDialog):
         self.close()
 
 
-    def Update_Download_Path(self, printflag, *args):
+    def Update_Download_Path(printflag, *args):
         with open(DefaultLocFileDir, 'r') as f:
             DefaultLocPATH = f.read()
         if printflag:
