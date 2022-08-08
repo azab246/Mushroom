@@ -2,10 +2,83 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="libadwaita" version="1.0"/>
-  <requires lib="pango" version="1.0"/>
   <template class="PreferencesWindow" parent="AdwPreferencesWindow">
+    <property name="default-width">500</property>
+    <property name="default-height">430</property>
     <property name="can-navigate-back">True</property>
     <child>
+      <object class="AdwPreferencesPage">
+        <property name="margin-start">15</property>
+        <property name="margin-end">15</property>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title" translatable="yes">Downloads Location</property>
+            <child>
+              <object class="AdwActionRow">
+                <property name="title" translatable="yes">Path</property>
+                <property name="subtitle" translatable="yes">Enter A HOME ONLY Path</property>
+                <child>
+                  <object class="GtkEntry" id="DefaultLocEntry">
+                    <property name="hexpand">True</property>
+                    <property name="margin-top">8</property>
+                    <property name="margin-bottom">8</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="title" translatable="yes">Default Extensions</property>
+            <child>
+              <object class="AdwActionRow">
+                <property name="title" translatable="yes">Video Container</property>
+                <child>
+                  <object class="GtkComboBox" id="VContainerBox">
+                    <property name="width_request">100</property>
+                    <property name="margin-top">8</property>
+                    <property name="margin-bottom">8</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow">
+                <property name="title" translatable="yes">Audio Container</property>
+                <child>
+                  <object class="GtkComboBox" id="AContainerBox">
+                    <property name="width_request">100</property>
+                    <property name="margin-top">8</property>
+                    <property name="margin-bottom">8</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="vexpand">True</property>
+            <property name="valign">end</property>
+            <child>
+              <object class="GtkBox">
+                <property name="halign">center</property>
+                <child>
+                  <object class="GtkButton" id="PreferencesSaveButton">
+                    <property name="label">  Save  </property>
+                    <signal name="clicked" handler="on_DefaultLoc_Save"/>
+                    <style>
+                      <class name="pill"/>
+                      <class name="Accept-Button"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
     </child>
   </template>
 </interface>

@@ -717,10 +717,6 @@
         <attribute name="action">app.PreferencesWindow</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">_Change Download Path</attribute>
-        <attribute name="action">app.DefaultLocation</attribute>
-      </item>
-      <item>
         <attribute name="label" translatable="yes">_Keyboard Shortcuts</attribute>
         <attribute name="action">win.show-help-overlay</attribute>
       </item>

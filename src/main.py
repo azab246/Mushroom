@@ -88,17 +88,23 @@ class MushroomWindow(Gtk.ApplicationWindow):
     ListRequest = 0
 
     def __init__(self, **kwargs):
-        global DefaultLocFileDir
+        super().__init__(**kwargs)
         global DefaultLocPATH
+        global DefaultVContainer
+        global DefaultAContainer
+        global VCOPT
+        global ACOPT
+        global ConfigFileDir
         global cache_dir
         global data_dir
         global DownloadCacheDir
         global ffmpeg
-        super().__init__(**kwargs)
+        VCOPT = {'mp4' : 0, 'mkv' : 1, 'webm' : 2, 'mov' : 3, 'flv' : 4}
+        ACOPT = {'mp3' : 0, 'aac' : 1, 'ogg' : 2, 'wav' : 3, 'flac' : 4}
         self.isactivetoast = False
         cache_dir = GLib.get_user_cache_dir()
         data_dir = GLib.get_user_data_dir()
-        DefaultLocFileDir = GLib.get_user_cache_dir() + "/tmp/DefaultDownloadLoc"
+        ConfigFileDir = GLib.get_user_cache_dir() + "/tmp/config"
         ffmpeg = f'{data_dir}/ffmpeg'
         DownloadCacheDir = cache_dir + '/DownloadsCache/'
         # Database + DLoc File
@@ -106,27 +112,33 @@ class MushroomWindow(Gtk.ApplicationWindow):
         db = conn.cursor()
         db.execute('''
           CREATE TABLE IF NOT EXISTS Downloads
-          ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)
+          ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [ext] TEXT)
           ''')
         conn.commit()
         conn.close()
         try:
-            with open(DefaultLocFileDir, 'r') as f:
-                DefaultLocPATH = f.read()
-                print("All New Downloads Will Be Exported At : " + DefaultLocPATH)
+            with open(ConfigFileDir, 'r') as f:
+                conf = f.read().splitlines()
+                DefaultLocPATH = conf[0]
+                DefaultVContainer = conf[1]
+                DefaultAContainer = conf[2]
             f.close
         except FileNotFoundError:
-            with open(DefaultLocFileDir, 'x') as f:
-                f.close()
-            with open(DefaultLocFileDir, 'w') as f:
-                f.write(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)+ '/')
+            with open(ConfigFileDir, 'w') as f:
+                f.write(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)+ '/\n' + list(VCOPT.keys())[0] + '\n' + list(ACOPT.keys())[0] +'\n')
                 DefaultLocPATH = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) + '/'
+                DefaultVContainer = list(VCOPT.keys())[0]
+                DefaultAContainer = list(ACOPT.keys())[0]
                 f.close()
         self.MainBuffer.connect("inserted_text", self.islistq, self, True)
         self.MainBuffer.connect("deleted_text", self.islistq, self, True)
         self.Download_Rows = {}
         threading.Thread(target = self.AppData_Initialization, daemon = True).start()
         threading.Thread(target = self.UpdateDownloads, daemon = True).start()
+        
+        print("All New Downloads Will Be Exported At : " + DefaultLocPATH)
+        print("New Video Files Will Be Exported As : " + DefaultVContainer)
+        print("New Audio Files Be Exported As : " + DefaultAContainer)
         
 
 
@@ -204,16 +216,25 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
 
     def AddToTasksDB(self, url, res, dtype, size, name):
+        global DefaultLocPATH
+        global DefaultVContainer
+        global DefaultAContainer
+
+        if dtype == 'Video':
+            ext = DefaultVContainer
+        else:
+            ext = DefaultAContainer
+        
         fsize = self.size_format(size)
         dt = d.datetime.now().strftime("%d/%m/%Y %H:%M")
         conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
         self.db = conn.cursor()
         self.db.execute('''
           CREATE TABLE IF NOT EXISTS Downloads
-          ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)
+          ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [ext] TEXT)
           ''')
         #print(res)
-        self.db.execute("INSERT INTO Downloads (url, res, type, location, added_on, size, name) VALUES (?, ?, ?, ?, ?, ?, ?)", (url, str(res), dtype, Location_Message_Dialog.Update_Download_Path(False), dt, fsize, name))
+        self.db.execute("INSERT INTO Downloads (url, res, type, location, added_on, size, name, ext) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (url, str(res), dtype, DefaultLocPATH, dt, fsize, name, ext))
         conn.commit()
         conn.close()
         threading.Thread(target = self.UpdateDownloads, daemon = True).start()
@@ -1003,7 +1024,7 @@ class DownloadsRow(Adw.ActionRow):
                             threading.Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
                             AFname = f"{DownloadCacheDir}{NIR}_AF.webm"
                             VFname = f"{DownloadCacheDir}{NIR}_VF.mp4"
-                            Fname = f"{DownloadCacheDir}{NIR}.mp4"
+                            Fname = f"{DownloadCacheDir}{NIR}.{DefaultVContainer}"
                             os.rename(f"{DownloadCacheDir}{NIR}_AF.download", AFname)
                             os.rename(f"{DownloadCacheDir}{NIR}_VF.download", VFname)
                             cmd = f'{ffmpeg} -i {VFname} -i {AFname} -c:v copy -c:a aac {Fname}'
@@ -1045,7 +1066,7 @@ class DownloadsRow(Adw.ActionRow):
                         threading.Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
                         Fname = f'{DownloadCacheDir}{NIR}.webm'
                         os.rename(f'{DownloadCacheDir}{NIR}.download', Fname)
-                        cmd = f'{ffmpeg} -i {Fname} -vn {Fname[0 : -4]}mp3'
+                        cmd = f'{ffmpeg} -i {Fname} -vn {Fname[0 : -4]}{DefaultVContainer}'
                         subprocess.run(cmd, shell = True)
                         os.remove(Fname)
                         move(f'{Fname[0 : -4]}mp3', f'{self.Loc}{NIR}.mp3')
@@ -1109,7 +1130,6 @@ class DownloadsRow(Adw.ActionRow):
         return
 
 
-
 class HistoryRow(Adw.ActionRow):
     def __init__(self, VID):
         super().__init__()
@@ -1137,101 +1157,120 @@ class AboutDialog(Gtk.AboutDialog):
 class PreferencesWindow(Adw.PreferencesWindow):
     __gtype_name__ = 'PreferencesWindow'
 
+    DefaultLocEntry = Gtk.Template.Child()
+    VContainerBox = Gtk.Template.Child()
+    AContainerBox = Gtk.Template.Child()
+    PreferencesSaveButton = Gtk.Template.Child()
+
     def __init__(self, parent):
-        Adw.PreferencesWindow.__init__(self)
+        super().__init__()
+        global DefaultLocPATH
+        global DefaultVContainer
+        global DefaultAContainer
+
+        self.VContainerList = Gtk.ListStore(str)
+        self.AContainerList = Gtk.ListStore(str)
+        for E in list(VCOPT.keys()):
+            self.VContainerList.append([f'{E.upper()}'])
+        for E in list(ACOPT.keys()):
+            self.AContainerList.append([f'{E.upper()}'])
+
+        self.conf = self.Update_Preferences(True)
+
+        self.VContainerBox.set_model(self.VContainerList)
+        renderer_text = Gtk.CellRendererText.new()
+        self.VContainerBox.pack_start(renderer_text, True)
+        self.VContainerBox.add_attribute(renderer_text, "text", 0)
+        self.VContainerBox.set_active(VCOPT[DefaultVContainer])
+
+        self.AContainerBox.set_model(self.AContainerList)
+        renderer_text = Gtk.CellRendererText.new()
+        self.AContainerBox.pack_start(renderer_text, True)
+        self.AContainerBox.add_attribute(renderer_text, "text", 0)
+        self.AContainerBox.set_active(ACOPT[DefaultAContainer])
+
         self.set_transient_for(parent)
-        self.present()
 
+        self.VContainerBox.set_active(VCOPT[DefaultVContainer])
+        self.AContainerBox.set_active(ACOPT[DefaultAContainer])
 
-    def on_Preferences_Cancel(self, *args):
-        self.close()
+        self.buffer = Gtk.EntryBuffer()
+        self.buffer.connect("inserted-text", self.CssFix)
+        self.buffer.connect("deleted-text", self.CssFix)
+        self.DefaultLocEntry.set_buffer(self.buffer)
 
-
-
-# Will Be Replaced With Preferences
-class Location_Message_Dialog(Gtk.MessageDialog):
-    def __init__(self, parent):
-        Gtk.MessageDialog.__init__(self)
-        self.props.text = 'Edit Default Download Path'
-        self.props.secondary_text = "Enter A HOME ONLY Path To Be Used In The Future Downloads"
-        # Setting Dialog Widgets
-        self.DefaultLocEntry = Gtk.Entry()
-        self.DefaultLocEntry.set_margin_top(15)
-        DefaultLocPATH = self.Update_Download_Path(True)
-        if len(DefaultLocPATH) > 52:
-            self.DefaultLocEntry.set_placeholder_text(DefaultLocPATH[:52]+"...")
+        if len(DefaultLocPATH) > 50:
+            self.DefaultLocEntry.set_placeholder_text(DefaultLocPATH[:50]+"...")
         else:
             self.DefaultLocEntry.set_placeholder_text(DefaultLocPATH)
-        self.DefaultLocButtonBox = Gtk.Box.new(0, 40)
-        self.DefaultCancel = Gtk.Button.new_with_label("Cancel")
-        self.DefaultCancel.connect("clicked", self.on_DefaultLoc_Cancel)
-        self.DefaultCancel.set_css_classes(["Cancel-Button", "pill"])
-        self.DefaultSave = Gtk.Button.new_with_label("  Save  ")
-        self.DefaultSave.connect("clicked", self.on_DefaultLoc_Save)
-        self.DefaultSave.set_css_classes(["Accept-Button","pill"])
-        self.DefaultLocButtonBox.append(self.DefaultCancel)
-        self.DefaultLocButtonBox.append(self.DefaultSave)
-        self.DefaultLocButtonBox.set_halign(3)
-        self.props.message_area.set_margin_top(20)
-        self.props.message_area.set_margin_bottom(20)
-        self.props.message_area.set_spacing(20)
-        self.props.modal = True
-        self.set_transient_for(parent)
-        self.Invalid_Path_Label = Gtk.Label.new(" ")
-        self.Invalid_Path_Label.set_css_classes(["heading"])
-        self.Invalid_Path_Revealer = Gtk.Revealer()
-        self.Invalid_Path_Revealer.set_transition_duration(150)
-        self.Invalid_Path_Revealer.set_transition_type(5)
-        self.Invalid_Path_Revealer.set_child(self.Invalid_Path_Label)
-        self.props.message_area.append(self.DefaultLocEntry)
-        self.props.message_area.append(self.Invalid_Path_Revealer)
-        self.props.message_area.append(self.DefaultLocButtonBox)
         self.present()
 
 
-    def on_DefaultLoc_Cancel(self, *args):
-        self.close()
+    def Update_Preferences(printflag, *args):
+        global DefaultLocPATH
+        global DefaultVContainer
+        global DefaultAContainer
 
-
-    def Update_Download_Path(printflag, *args):
-        with open(DefaultLocFileDir, 'r') as f:
-            DefaultLocPATH = f.read()
+        with open(ConfigFileDir, 'r') as f:
+            conf = f.read().splitlines()
+            DefaultLocPATH = conf[0]
+            DefaultVContainer = conf[1]
+            DefaultAContainer = conf[2]
         if printflag:
-            print("Location For New Downloads Is :" + DefaultLocPATH)
+            print("Location For New Downloads Is : " + DefaultLocPATH)
+            print("Default Container For Video Downloads Is : " + DefaultVContainer)
+            print("Default Container For Audio Downloads Is : " + DefaultAContainer)
         f.close()
-        return DefaultLocPATH
+        return conf
 
 
+    def When_Invalid_Path(self, message, *args):
+        self.DefaultLocEntry.set_css_classes(['error'])
+        self.DefaultLocEntry.props.secondary_icon_name = 'dialog-warning-symbolic'
+        self.DefaultLocEntry.set_icon_tooltip_text(1, message)
+
+        self.PreferencesSaveButton.set_css_classes(['Cancel-Button', 'pill'])
+        time.sleep(0.6)
+        self.PreferencesSaveButton.set_css_classes(['Accept-Button', 'pill'])
+
+
+    def CssFix(self, *args):
+        self.DefaultLocEntry.set_css_classes([])
+        self.DefaultLocEntry.props.secondary_icon_name = ''
+
+
+    @Gtk.Template.Callback()
     def on_DefaultLoc_Save(self, *args):
+        global DefaultLocPATH
+        global DefaultVContainer
+        global DefaultAContainer
+
         path = self.DefaultLocEntry.get_text()
         if not path:
-            threading.Thread(target = self.When_Invalid_Path, args = ["Nothing Has Been Entered!"], daemon = True).start()
-            return
+            path = self.conf[0]
         if path[0] != '/':
             path = '/' + path
         if path[len(path)-1] != '/':
             path = path + '/'
         if os.path.isdir(path):
             if f'/home/{GLib.get_user_name()}/' in path[0:len(GLib.get_user_name())+7]:
-                with open(DefaultLocFileDir, 'w') as f:
-                    f.write(path)
+                with open(ConfigFileDir, 'w') as f:
+                    f.write(path + '\n' + list(VCOPT.keys())[self.VContainerBox.get_active()] 
+                                + '\n' + list(ACOPT.keys())[self.AContainerBox.get_active()])
                 DefaultLocPATH = path
+                DefaultVContainer = list(VCOPT.keys())[self.VContainerBox.get_active()]
+                DefaultAContainer = list(ACOPT.keys())[self.AContainerBox.get_active()]
                 self.close()
-                print("Successfully Set To " + DefaultLocPATH)
+                if DefaultLocPATH != self.conf[0]:
+                    print("Successfully Set Path To " + DefaultLocPATH)
+                if DefaultVContainer != self.conf[1]:
+                    print("Successfully Set VContainer To " + DefaultVContainer)
+                if DefaultAContainer != self.conf[2]:
+                    print("Successfully Set AContainer To " + DefaultAContainer)
             else:
-                threading.Thread(target = self.When_Invalid_Path, args = ["Non-Home Directory!"], daemon = True).start()
+                threading.Thread(target = self.When_Invalid_Path, args = ["Non-Home Directory"], daemon = True).start()
         else:
-            threading.Thread(target = self.When_Invalid_Path, args = ["Invalid Directory!"], daemon = True).start()
-
-
-    def When_Invalid_Path(self, message, *args):
-        if self.Invalid_Path_Revealer.get_reveal_child() == False:
-            print(message)
-            self.Invalid_Path_Label.set_label(message)
-            self.Invalid_Path_Revealer.set_reveal_child(True)
-            time.sleep(2)
-            self.Invalid_Path_Revealer.set_reveal_child(False)
-
+            threading.Thread(target = self.When_Invalid_Path, args = ["Invalid Directory"], daemon = True).start()
 
 
 
@@ -1243,7 +1282,6 @@ class MushroomApplication(Adw.Application):
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
         self.create_action('quit', self.quit, ['<primary>q'])
         self.create_action('about', self.on_about_action)
-        self.create_action('DefaultLocation', self.on_DefaultLoc_action)#will be replaced
         self.create_action('PreferencesWindow', self.on_Preferences_action)
 
 
@@ -1272,10 +1310,6 @@ class MushroomApplication(Adw.Application):
         """Callback for the app.about action."""
         about = AboutDialog(self.props.active_window)
 
-    #will be replaced
-    def on_DefaultLoc_action(self, widget, _):
-        """Callback For app.DefaultLoc action."""
-        self.DefaultLocation = Location_Message_Dialog(self.props.active_window)
     
     def on_Preferences_action(self, widget, _):
         """Callback For app.PreferencesWindow action."""
