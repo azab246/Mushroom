@@ -138,7 +138,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         
         print("All New Downloads Will Be Exported At : " + DefaultLocPATH)
         print("New Video Files Will Be Exported As : " + DefaultVContainer)
-        print("New Audio Files Be Exported As : " + DefaultAContainer)
+        print("New Audio Files Will Be Exported As : " + DefaultAContainer)
         
 
 
