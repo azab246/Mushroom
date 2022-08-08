@@ -560,9 +560,9 @@
                                     <object class="GtkLabel" id="TMLable">
                                       <property name="hexpand">True</property>
                                       <property name="xalign">0.5</property>
+                                      <property name="width-chars">9</property>
                                       <property name="margin-top">36</property>
                                       <property name="margin-bottom">36</property>
-                                      <property name="margin-end">10</property>
                                       <property name="label">Downloads</property>
                                       <style>
                                         <class name="title-1"/>
@@ -571,14 +571,14 @@
                                   </child>
                                   <child>
                                     <object class="GtkRevealer" id="ClearHistory_Revealer">
-                                      <property name="transition-duration">80</property>
+                                      <property name="transition-duration">200</property>
                                       <property name="transition-type">1</property>
                                       <child>
                                         <object class="GtkButton" id="ClearHistory_Button">
                                           <property name="icon-name">user-trash-symbolic</property>
                                           <property name="margin-top">36</property>
                                           <property name="margin-bottom">36</property>
-                                          <property name="margin-end">20</property>
+                                          <property name="margin-end">30</property>
                                           <property name="tooltip-text">Clear History</property>
                                           <signal name="clicked" handler="Clear_History"/>
                                           <style>
