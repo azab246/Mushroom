@@ -729,14 +729,12 @@ class MushroomWindow(Gtk.ApplicationWindow):
     def On_H_D_Button_Clicked(self, button, *args):
         if button.get_icon_name() == 'preferences-system-time-symbolic':
             button.set_icon_name('document-save-symbolic')
-            self.TMLable.set_label("  History")
+            self.TMLable.set_label("History")
             button.set_tooltip_text("View Downloads")
             self.Downloads_Revealer.set_reveal_child(False)
             self.H_D_Carousel.scroll_to(self.History_Revealer, True)
             self.History_Revealer.set_reveal_child(True)
-            self.ClearHistory_Revealer.set_reveal_child(True)
-            self.ClearHistory_Button.set_margin_end(60)
-            
+            self.ClearHistory_Revealer.set_reveal_child(True)            
         else:
             button.set_icon_name('preferences-system-time-symbolic')
             self.TMLable.set_label("Downloads")
@@ -745,8 +743,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.History_Revealer.set_reveal_child(False)
             self.H_D_Carousel.scroll_to(self.Downloads_Revealer, True)
             self.ClearHistory_Revealer.set_reveal_child(False)
-            self.ClearHistory_Button.set_margin_end(20)
-
 
     @Gtk.Template.Callback()
     def Clear_History(self, button, *args):
@@ -1135,6 +1131,16 @@ class AboutDialog(Gtk.AboutDialog):
         self.set_transient_for(parent)
         self.present()
 
+
+
+@Gtk.Template(resource_path='/com/github/azab246/mushroom/gtk/preferences.ui')
+class PreferencesWindow(Adw.PreferencesWindow):
+    def __init__(self, parent):
+        super().__init__()
+
+
+
+# Will Be Replaced With Preferences
 class Location_Message_Dialog(Gtk.MessageDialog):
     def __init__(self, parent):
         Gtk.MessageDialog.__init__(self)
@@ -1217,7 +1223,6 @@ class Location_Message_Dialog(Gtk.MessageDialog):
             self.Invalid_Path_Revealer.set_reveal_child(True)
             time.sleep(2)
             self.Invalid_Path_Revealer.set_reveal_child(False)
-
 
 
 
