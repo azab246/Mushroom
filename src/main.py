@@ -1069,7 +1069,7 @@ class DownloadsRow(Adw.ActionRow):
                         cmd = f'{ffmpeg} -i {Fname} -vn {Fname[0 : -4]}{DefaultAContainer}'
                         subprocess.run(cmd, shell = True)
                         os.remove(Fname)
-                        move(f'{Fname[0 : -4]}mp3', f'{self.Loc}{NIR}.{DefaultAContainer}')
+                        move(f'{Fname[0 : -4]}{DefaultAContainer}', f'{self.Loc}{NIR}.{DefaultAContainer}')
                         self.ProgressLabel.set_label("Done")
                         self.ispulse = False
                         self.ProgressBar.set_fraction(1)
