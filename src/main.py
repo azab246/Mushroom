@@ -1031,7 +1031,7 @@ class DownloadsRow(Adw.ActionRow):
                             subprocess.run(cmd, shell = True)
                             os.remove(AFname)
                             os.remove(VFname)
-                            move(Fname, f"{self.Loc}{NIR}.mp4")
+                            move(Fname, f"{self.Loc}{NIR}.{DefaultVContainer}")
                             self.ProgressLabel.set_label("Done")
                             self.ispulse = False
                             self.ProgressBar.set_fraction(1)
@@ -1066,10 +1066,10 @@ class DownloadsRow(Adw.ActionRow):
                         threading.Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
                         Fname = f'{DownloadCacheDir}{NIR}.webm'
                         os.rename(f'{DownloadCacheDir}{NIR}.download', Fname)
-                        cmd = f'{ffmpeg} -i {Fname} -vn {Fname[0 : -4]}{DefaultVContainer}'
+                        cmd = f'{ffmpeg} -i {Fname} -vn {Fname[0 : -4]}{DefaultAContainer}'
                         subprocess.run(cmd, shell = True)
                         os.remove(Fname)
-                        move(f'{Fname[0 : -4]}mp3', f'{self.Loc}{NIR}.mp3')
+                        move(f'{Fname[0 : -4]}mp3', f'{self.Loc}{NIR}.{DefaultAContainer}')
                         self.ProgressLabel.set_label("Done")
                         self.ispulse = False
                         self.ProgressBar.set_fraction(1)
