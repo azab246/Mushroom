@@ -114,6 +114,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
           CREATE TABLE IF NOT EXISTS Downloads
           ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [ext] TEXT)
           ''')
+        db.execute('''
+          CREATE TABLE IF NOT EXISTS History
+          ([len] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [Finished_on] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)
+          ''')
         conn.commit()
         conn.close()
         try:
@@ -135,6 +139,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         self.Download_Rows = {}
         threading.Thread(target = self.AppData_Initialization, daemon = True).start()
         threading.Thread(target = self.UpdateDownloads, daemon = True).start()
+        threading.Thread(target = self.UpdateHistory, daemon = True).start()
         
         print("All New Downloads Will Be Exported At : " + DefaultLocPATH)
         print("New Video Files Will Be Exported As : " + DefaultVContainer)
@@ -240,7 +245,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
         threading.Thread(target = self.UpdateDownloads, daemon = True).start()
 
 
-    #def AddToHistoryDB(self, ID):
+    def AddToHistoryDB(self, ID):
+        return
 
 
     def UpdateDownloads(self, *args):
@@ -264,7 +270,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     # TODO: Make Clear History Button not to be Sensitive in Case that there
     #       Ist A Data In  History To Clear 
-    #def UpdateHistory(self, *args):
+    def UpdateHistory(self, *args):
+        return
 
 
     def Video_Data(self, *args):
