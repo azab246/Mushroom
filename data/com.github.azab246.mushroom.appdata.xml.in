@@ -1,9 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<component type="desktop">
-	<id>com.github.azab246.mushroom.desktop</id>
-	<metadata_license>CC0-1.0</metadata_license>
-	<project_license>GPL-3.0-or-later</project_license>
-	<description>
-	  <p>No description</p>
-	</description>
+<!-- Copyright 2022 azab246 abdalrahman.azab2004@gmail.com -->
+<component type="desktop-application">
+  <id>com.github.azab246.mushroom</id>
+  <name>Mushroom</name>
+  <developer_name>Azab246</developer_name>
+  <summary>A Simple Youtupe Video Downloader Based On Pytube</summary>
+  <launchable type="desktop-id">com.github.taiko2k.avvie.desktop</launchable>
+  <metadata_license>CC0-BY-SA-3.0</metadata_license>
+  <project_license>GPL-3.0+</project_license>
+  <url type="homepage">https://github.com/azab246/Mushroom</url>
+  <url type="bugtracker">https://github.com/azab246/Mushroom/issues</url>
+  <icon type="remote" height="256" width="256">https://raw.githubusercontent.com/azab246/Mushroom/Main/src/res/Mushroom.svg</icon>
+
+  <!--description>
+    <p></p>
+  </description-->
+
+  <!--screenshots>
+    <screenshot type="default">
+      <image type="source"></image>
+      <caption></caption>
+    </screenshot>
+  </screenshots-->
+
+  <categories>
+    <category>Utilities</category>
+  </categories>
+
+  <releases>
+    <release version="0.1" date="">
+      <description>
+        <ul>
+          <li>First Beta!</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1" />
+
+  <kudos>
+    <kudo>HiDpiIcon</kudo>
+    <kudo>ModernToolkit</kudo>
+  </kudos>
+
+  <update_contact>abdalrahman.azab2004@gmail.com</update_contact>
+
 </component>
