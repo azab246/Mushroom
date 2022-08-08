@@ -2,7 +2,8 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="libadwaita" version="1.0"/>
-  <template class="AdwDemoPreferencesWindow" parent="PreferencesWindow">
+  <requires lib="pango" version="1.0"/>
+  <template class="PreferencesWindow" parent="AdwPreferencesWindow">
     <property name="can-navigate-back">True</property>
     <child>
     </child>

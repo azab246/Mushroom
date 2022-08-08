@@ -1135,8 +1135,16 @@ class AboutDialog(Gtk.AboutDialog):
 
 @Gtk.Template(resource_path='/com/github/azab246/mushroom/gtk/preferences.ui')
 class PreferencesWindow(Adw.PreferencesWindow):
+    __gtype_name__ = 'PreferencesWindow'
+
     def __init__(self, parent):
-        super().__init__()
+        Adw.PreferencesWindow.__init__(self)
+        self.set_transient_for(parent)
+        self.present()
+
+
+    def on_Preferences_Cancel(self, *args):
+        self.close()
 
 
 
@@ -1235,7 +1243,8 @@ class MushroomApplication(Adw.Application):
                          flags=Gio.ApplicationFlags.FLAGS_NONE)
         self.create_action('quit', self.quit, ['<primary>q'])
         self.create_action('about', self.on_about_action)
-        self.create_action('DefaultLocation', self.on_DefaultLoc_action)
+        self.create_action('DefaultLocation', self.on_DefaultLoc_action)#will be replaced
+        self.create_action('PreferencesWindow', self.on_Preferences_action)
 
 
     def do_activate(self):
@@ -1263,10 +1272,14 @@ class MushroomApplication(Adw.Application):
         """Callback for the app.about action."""
         about = AboutDialog(self.props.active_window)
 
+    #will be replaced
     def on_DefaultLoc_action(self, widget, _):
         """Callback For app.DefaultLoc action."""
         self.DefaultLocation = Location_Message_Dialog(self.props.active_window)
-
+    
+    def on_Preferences_action(self, widget, _):
+        """Callback For app.PreferencesWindow action."""
+        self.PreferencesWindow = PreferencesWindow(self.props.active_window)
 
     def create_action(self, name, callback, shortcuts=None):
         """Add an application action.
