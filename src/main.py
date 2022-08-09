@@ -900,16 +900,18 @@ class DownloadsRow(Adw.ActionRow):
         self.ProgressBox = Gtk.Box.new(orientation = 0, spacing = 0)
         self.ProgressBox.set_hexpand(True)
         # setting Title
-        self.Title = Gtk.Label.new(self.Name)
+        if len(self.Name) > 35:
+            self.Name = self.Name[0:34] + '...'
+        self.Title = Gtk.Label.new(self.Name + f' ( {self.ext.upper()} )')
         self.Title.set_ellipsize(3)
-        self.Title.set_max_width_chars(25)
+        self.Title.set_max_width_chars(30)
         self.Title.set_xalign(0)
         self.Title.add_css_class("heading")
         # setting Subtitle
         if DType == "Video":
-            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Resouloution : " + DRes + "   Format : " + self.ext.upper() + "   Size : " + DSize)
+            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Resouloution : " + DRes + "   Size : " + DSize)
         else:
-            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Bitrate : " + DRes + "   Format : " + self.ext.upper() + "   Size : " + DSize)
+            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Bitrate : " + DRes + "   Size : " + DSize)
         self.Subtitle.set_ellipsize(3)
         self.Subtitle.set_max_width_chars(25)
         self.Subtitle.set_xalign(0)
