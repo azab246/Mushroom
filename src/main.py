@@ -901,8 +901,10 @@ class DownloadsRow(Adw.ActionRow):
         self.ProgressBox.set_hexpand(True)
         # setting Title
         if len(self.Name) > 35:
-            self.Name = self.Name[0:34] + '...'
-        self.Title = Gtk.Label.new(self.Name + f' ( {self.ext.upper()} )')
+            Namex = self.Name[0:34] + '...'
+            self.Title = Gtk.Label.new(Namex + f' ( {self.ext.upper()} )')
+        else:
+            self.Title = Gtk.Label.new(self.Name + f' ( {self.ext.upper()} )')
         self.Title.set_ellipsize(3)
         self.Title.set_max_width_chars(30)
         self.Title.set_xalign(0)
