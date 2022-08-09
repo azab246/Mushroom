@@ -862,7 +862,7 @@ class DownloadsRow(Adw.ActionRow):
     def __init__(self, DURL, DRes , DType, DLoc, DAddedOn, DSize, DName, DID, DEXT):
         super().__init__()
         # setting Some Values
-        self.ext = DEXT.upper()
+        self.ext = DEXT
         self.ispulse = False
         self.add_css_class("card")
         self.Name = DName
@@ -907,9 +907,9 @@ class DownloadsRow(Adw.ActionRow):
         self.Title.add_css_class("heading")
         # setting Subtitle
         if DType == "Video":
-            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Resouloution : " + DRes + "   Format : " + self.ext + "   Size : " + DSize)
+            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Resouloution : " + DRes + "   Format : " + self.ext.upper() + "   Size : " + DSize)
         else:
-            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Bitrate : " + DRes + "   Format : " + self.ext + "   Size : " + DSize)
+            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Bitrate : " + DRes + "   Format : " + self.ext.upper() + "   Size : " + DSize)
         self.Subtitle.set_ellipsize(3)
         self.Subtitle.set_max_width_chars(25)
         self.Subtitle.set_xalign(0)
