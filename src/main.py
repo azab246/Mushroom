@@ -257,7 +257,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             for video in queue:
                 if str(video[7]) not in list(self.Download_Rows.keys()):
                     print("Adding To Downloads List : " + video[6] + f"  ( {video[2]} )")
-                    self.Download_Rows[str(video[7])] = DownloadsRow(video[0], video[1], video[2], video[3], video[4], video[5], video[6], video[7])
+                    self.Download_Rows[str(video[7])] = DownloadsRow(video[0], video[1], video[2], video[3], video[4], video[5], video[6], video[7], video[8])
                     self.Downloads_List.prepend(self.Download_Rows[str(video[7])])
                     self.TaskManagerPage.set_needs_attention(True)
             if len(list(self.Download_Rows.keys())) == 0:
@@ -859,9 +859,10 @@ class ListRow(Adw.ActionRow):
 
 
 class DownloadsRow(Adw.ActionRow):
-    def __init__(self, DURL, DRes , DType, DLoc, DAddedOn, DSize, DName, DID):
+    def __init__(self, DURL, DRes , DType, DLoc, DAddedOn, DSize, DName, DID, DEXT):
         super().__init__()
         # setting Some Values
+        self.ext = DEXT.upper()
         self.ispulse = False
         self.add_css_class("card")
         self.Name = DName
@@ -906,9 +907,9 @@ class DownloadsRow(Adw.ActionRow):
         self.Title.add_css_class("heading")
         # setting Subtitle
         if DType == "Video":
-            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Resouloution : " + DRes + "   Size : " + DSize)
+            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Resouloution : " + DRes + "   Format : " + self.ext + "   Size : " + DSize)
         else:
-            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Bitrate : " + DRes + "   Size : " + DSize)
+            self.Subtitle = Gtk.Label.new("Added On : " + DAddedOn + "   Bitrate : " + DRes + "   Format : " + self.ext + "   Size : " + DSize)
         self.Subtitle.set_ellipsize(3)
         self.Subtitle.set_max_width_chars(25)
         self.Subtitle.set_xalign(0)
@@ -1031,14 +1032,14 @@ class DownloadsRow(Adw.ActionRow):
                             threading.Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
                             AFname = f"{DownloadCacheDir}{NIR}_AF.webm"
                             VFname = f"{DownloadCacheDir}{NIR}_VF.mp4"
-                            Fname = f"{DownloadCacheDir}{NIR}.{DefaultVContainer}"
+                            Fname = f"{DownloadCacheDir}{NIR}.{self.ext}"
                             os.rename(f"{DownloadCacheDir}{NIR}_AF.download", AFname)
                             os.rename(f"{DownloadCacheDir}{NIR}_VF.download", VFname)
                             cmd = f'{ffmpeg} -i {VFname} -i {AFname} -c:v copy -c:a aac {Fname}'
                             subprocess.run(cmd, shell = True)
                             os.remove(AFname)
                             os.remove(VFname)
-                            move(Fname, f"{self.Loc}{NIR}.{DefaultVContainer}")
+                            move(Fname, f"{self.Loc}{NIR}.{self.ext}")
                             self.ProgressLabel.set_label("Done")
                             self.ispulse = False
                             self.ProgressBar.set_fraction(1)
@@ -1073,10 +1074,10 @@ class DownloadsRow(Adw.ActionRow):
                         threading.Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
                         Fname = f'{DownloadCacheDir}{NIR}.webm'
                         os.rename(f'{DownloadCacheDir}{NIR}.download', Fname)
-                        cmd = f'{ffmpeg} -i {Fname} -vn {Fname[0 : -4]}{DefaultAContainer}'
+                        cmd = f'{ffmpeg} -i {Fname} -vn {Fname[0 : -4]}{self.ext}'
                         subprocess.run(cmd, shell = True)
                         os.remove(Fname)
-                        move(f'{Fname[0 : -4]}{DefaultAContainer}', f'{self.Loc}{NIR}.{DefaultAContainer}')
+                        move(f'{Fname[0 : -4]}{self.ext}', f'{self.Loc}{NIR}.{self.ext}')
                         self.ProgressLabel.set_label("Done")
                         self.ispulse = False
                         self.ProgressBar.set_fraction(1)
