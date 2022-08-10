@@ -293,6 +293,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     self.SizesV.append(stream.filesize + self.vid.streams.filter(progressive = False, only_audio = True, file_extension='webm').last().filesize)
                     print(stream.resolution)
             for stream in self.vid.streams.filter(type = "audio", file_extension='webm'):
+                print(stream.bitrate)
                 if f"{stream.abr}" not in self.ResA:
                     self.VidAuidRes.append([f"{stream.abr}"])
                     self.ResA.append(f"{stream.abr}")
@@ -529,9 +530,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 VidRes = self.ResA[self.VidResBox.get_active()]
                 VidType = "Audio"
                 VidSize = self.SizesA[self.VidResBox.get_active()]
-            #print(2)
+            print(2)
             self.AddToTasksDB(self.VidURL, VidRes, VidType, VidSize, self.VidName)
-            #print(3)
+            self.UpdateDownloads()
+            print(3)
             self.vid_revealer.set_reveal_child(False)
             self.done_revealer.set_reveal_child(True)
             self.Carousel.scroll_to(self.done_revealer, True)
@@ -1074,7 +1076,7 @@ class DownloadsRow(Adw.ActionRow):
                         threading.Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
                         Fname = f'{DownloadCacheDir}{NIR}.webm'
                         os.rename(f'{DownloadCacheDir}{NIR}.download', Fname)
-                        cmd = f'{ffmpeg} -i {Fname} -vn {Fname[0 : -4]}{self.ext}'
+                        cmd = f'{ffmpeg} -i {Fname} -ab {self.Res[0:-3]} -f {self.ext} {Fname[0 : -4]}{self.ext}'
                         subprocess.run(cmd, shell = True)
                         os.remove(Fname)
                         move(f'{Fname[0 : -4]}{self.ext}', f'{self.Loc}{NIR}.{self.ext}')
