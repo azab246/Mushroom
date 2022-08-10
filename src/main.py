@@ -112,7 +112,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         db = conn.cursor()
         db.execute('''
           CREATE TABLE IF NOT EXISTS Downloads
-          ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [ext] TEXT)
+          ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT,[ext] TEXT , [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)
           ''')
         db.execute('''
           CREATE TABLE IF NOT EXISTS History
@@ -221,28 +221,19 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
 
     def AddToTasksDB(self, url, res, dtype, size, name):
-        global DefaultLocPATH
-        global DefaultVContainer
-        global DefaultAContainer
-
         if dtype == 'Video':
-            ext = DefaultVContainer
+            Ext = DefaultVContainer
         else:
-            ext = DefaultAContainer
-        
+            Ext = DefaultAContainer
+        print(DefaultVContainer + "  " + DefaultLocPATH)
         fsize = self.size_format(size)
         dt = d.datetime.now().strftime("%d/%m/%Y %H:%M")
         conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
         self.db = conn.cursor()
-        self.db.execute('''
-          CREATE TABLE IF NOT EXISTS Downloads
-          ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [ext] TEXT)
-          ''')
-        #print(res)
-        self.db.execute("INSERT INTO Downloads (url, res, type, location, added_on, size, name, ext) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (url, str(res), dtype, DefaultLocPATH, dt, fsize, name, ext))
+        self.db.execute('''CREATE TABLE IF NOT EXISTS Downloads ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [ext] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)''')
+        self.db.execute('''INSERT INTO Downloads (url, res, type, location, added_on, size, name, ext) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (url, str(res), dtype, DefaultLocPATH, dt, fsize, name, Ext))
         conn.commit()
         conn.close()
-        threading.Thread(target = self.UpdateDownloads, daemon = True).start()
 
 
     def AddToHistoryDB(self, ID):
@@ -255,7 +246,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.db = conn.cursor()
             queue = self.db.execute("SELECT * FROM Downloads")
             for video in queue:
-                if str(video[7]) not in list(self.Download_Rows.keys()):
+                if str(video[8]) not in list(self.Download_Rows.keys()):
                     print("Adding To Downloads List : " + video[6] + f"  ( {video[2]} )")
                     self.Download_Rows[str(video[7])] = DownloadsRow(video[0], video[1], video[2], video[3], video[4], video[5], video[6], video[7], video[8])
                     self.Downloads_List.prepend(self.Download_Rows[str(video[7])])
@@ -566,6 +557,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 button.set_sensitive(True)
                 return
             if self.connect_func() == False:
+                self.Fail("Connection Error")
                 button.set_sensitive(True)
                 return
             NoneToast.dismiss()
@@ -582,28 +574,30 @@ class MushroomWindow(Gtk.ApplicationWindow):
             print("Selected: " + str(ListRes) + " " + ListType)
             # Getting Request Data 
             i = 0
-            Videos = self.plist.videos
-            for video in Videos:
+            for videoO in self.plist.videos:
                 if rows[i].check.get_active() == True:
                     if ListType == "Video":
-                        ListRes = self.LResV[self.ListResBox.get_active()] if self.ListGlobalSwitch.get_state() == True else list(rows[i].RListV.keys())[rows[i].CellRBox.get_active()]
-                        stream = video.streams.filter(progressive = False, only_video = True, type = "video", res = ListRes, file_extension='mp4').first()
-                        Size = stream.filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='webm').last()
+                        if self.ListGlobalSwitch.get_state() == True:
+                            ListRes = self.LResV[self.ListResBox.get_active()]  
+                        else:
+                            ListRes = list(rows[i].RListV.keys())[rows[i].CellRBox.get_active()]
+                        Size = videoO.streams.filter(progressive = False, only_video = True, type = "video", res = ListRes, file_extension='mp4').first().filesize + videoO.streams.filter(progressive = False, only_audio = True, file_extension='webm').last().filesize
                     else:
-                        ListRes = self.LResA[self.ListResBox.get_active()] if self.ListGlobalSwitch.get_state() == True else list(rows[i].RListA.keys())[rows[i].CellRBox.get_active()]
-                        stream = video.streams.filter(type = "audio", abr = ListRes , file_extension = "webm").first()
-                        Size = stream.filesize
+                        if self.ListGlobalSwitch.get_state() == True:
+                            ListRes = self.LResA[self.ListResBox.get_active()]
+                        else:
+                            ListRes = list(rows[i].RListA.keys())[rows[i].CellRBox.get_active()]
+                        Size = videoO.streams.filter(type = "audio", abr = ListRes , file_extension = "webm").first().filesize
                     self.AddToTasksDB(rows[i].URL, ListRes, ListType, Size, rows[i].Title)
                 i += 1
+            self.UpdateDownloads()
             self.loading = 0
         except Exception as err:
             if err:
                 self.loading = 0
                 self.Fail(err)
                 button.set_sensitive(True)
-                return
         button.set_sensitive(True)
-
 
     @Gtk.Template.Callback()
     def Submit_Func(self, button):
@@ -755,7 +749,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def On_H_D_Button_Clicked(self, button, *args):
-        if button.get_icon_name() == 'preferences-system-time-symbolic':
+        if button.get_icon_name == 'preferences-system-time-symbolic':
             button.set_icon_name('document-save-symbolic')
             self.TMLable.set_label("History")
             button.set_tooltip_text("View Downloads")
@@ -854,15 +848,17 @@ class ListRow(Adw.ActionRow):
             self.CellRBox.set_sensitive(False)
             self.set_css_classes(['dim-label'])
         else:
-            self.CellRBox.set_sensitive(True)
+            if not self.check.get_active():
+                self.CellRBox.set_sensitive(True)
             self.set_css_classes([])
 
 
 class DownloadsRow(Adw.ActionRow):
-    def __init__(self, DURL, DRes , DType, DLoc, DAddedOn, DSize, DName, DID, DEXT):
+    def __init__(self, DURL, DRes , DType, DLoc, DAddedOn, DSize, DName, DEXT, DID):
         super().__init__()
         # setting Some Values
         self.ext = DEXT
+        print(self.ext)
         self.ispulse = False
         self.add_css_class("card")
         self.Name = DName
