@@ -542,7 +542,6 @@
                                 <object class="GtkBox">
                                   <property name="halign">center</property>
                                   <property name="spacing">15</property>
-                                  
                                   <child>
                                     <object class="GtkButton">
                                       <property name="icon-name">preferences-system-time-symbolic</property>
@@ -595,7 +594,6 @@
                                 <object class="AdwCarousel" id="H_D_Carousel">
                                   <property name="vexpand">True</property>
                                   <property name="hexpand">True</property>
-                                  <property name="valign">center</property>
                                   <property name="interactive">False</property>
                                   <property name="allow-scroll-wheel">False</property>
                                   <property name="allow-mouse-drag">False</property>
@@ -603,6 +601,7 @@
                                   <property name="spacing">300</property>
                                   <child>
                                     <object class="GtkRevealer" id="Downloads_Revealer">
+                                      <property name="valign">center</property>
                                       <property name="transition-duration">150</property>
                                       <property name="transition-type">1</property>
                                       <property name="reveal-child">True</property>
