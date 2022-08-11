@@ -24,7 +24,7 @@
   background-color: #DC1A41;
 }
 
-.Progress-Fail > trough > progress {
+.Progress-Fail progress {
   background-image: none;
   background-color: #C51A41;
 }
