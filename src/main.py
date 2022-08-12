@@ -976,21 +976,16 @@ class DownloadsRow(Adw.ActionRow):
                     size = stream.filesize + sa
                     CHUNK = 1024*500
                     self.downloaded = 0
-                    with open(f'{DownloadCacheDir}{NIR}_VF.download', 'wb') as f:
-                        response = urllib.request.urlopen(stream.url) # get an iterable stream
-                        self.ProgressLabel.set_label("%0")
-                        self.chunk_handler(size, response, f, CHUNK)
-                        f.close()
+                    self.downloadedOF = 0
+                    self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}_VF.download', stream.filesize)
                     if self.is_cancelled:
                         os.remove(f'{DownloadCacheDir}{NIR}_VF.download')
                         self.ProgressLabel.set_label("Canceled")
                         return
                     else:
-                        with open(f'{DownloadCacheDir}{NIR}_AF.download', 'wb') as f:
-                            stream = yt.streams.filter(only_audio = True, file_extension = "webm").last()
-                            response = urllib.request.urlopen(stream.url)
-                            self.chunk_handler(size, response, f, CHUNK)
-                            f.close()
+                        stream = yt.streams.filter(only_audio = True, file_extension = "webm").last()
+                        self.downloadedOF = 0
+                        self.chunk_handler(size, CHUNK, False, stream.url, f'{DownloadCacheDir}{NIR}_AF.download', stream.filesize)
                         if self.is_cancelled:
                             os.remove(f'{DownloadCacheDir}{NIR}_AF.download')
                             self.ProgressLabel.set_label("Canceled")
@@ -1026,11 +1021,8 @@ class DownloadsRow(Adw.ActionRow):
                     size = stream.filesize
                     CHUNK = 1024*500
                     self.downloaded = 0
-                    with open(f'{DownloadCacheDir}{NIR}.download', 'wb') as f:
-                        response = urllib.request.urlopen(stream.url) # get an iterable stream
-                        self.ProgressLabel.set_label("%0")
-                        self.chunk_handler(size, response, f, CHUNK)
-                        f.close()
+                    self.downloadedOF = 0
+                    self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}.download', size)
                     if self.is_cancelled:
                         os.remove(f'{DownloadCacheDir}{NIR}.download')
                         self.ProgressLabel.set_label("Canceled")
@@ -1084,36 +1076,49 @@ class DownloadsRow(Adw.ActionRow):
             time.sleep(0.25)
 
 
-    def chunk_handler(self, size, response, f, CHUNK):
+
+    def chunk_handler(self, size, CHUNK, zero, StreamUrl, Name, fsize):
         # writing chunk and checking if we can use larger 
         # chunk size based on the connection speed
-        while True:
-            if self.is_cancelled:
-                self.ProgressLabel.set_label("Canceled")
-                break
-            elif not self.is_paused:
-                start = (time.time_ns() + 500000) // 1000000
-                chunk = response.read(CHUNK) # get next chunk of the stream
-                end = (time.time_ns() + 500000) // 1000000
-                if chunk:
-                    f.write(chunk)
-                    self.downloaded += CHUNK
-                    self.ProgressLabel.set_label(f"%{(self.downloaded / (size))*100:.2f}")
-                    self.ProgressBar.set_fraction(self.downloaded / (size))
-                    CHUNKTIME = (end - start) / 1000
-                    if CHUNKTIME == 0:
-                        CHUNKTIME = 1
-                    if CHUNK == 0:
-                        CHUNK = 1024*500
-                    if int(CHUNK / CHUNKTIME) > 20*1024*1024:
-                        CHUNK = 20*1024*1024
-                    else:
-                        CHUNK = int(CHUNK / CHUNKTIME)
-                    print(str(CHUNK) + " " + str(CHUNKTIME))
-                else:
-                    # no more data
+        with open(Name, 'wb') as f:
+            if zero:
+                self.ProgressLabel.set_label("%0")
+            while self.downloadedOF <= fsize:
+                if self.is_cancelled:
+                    self.ProgressLabel.set_label("Canceled")
                     break
-                
+                elif not self.is_paused:
+                    range_header = f"bytes={self.downloadedOF}-{min(self.downloadedOF + CHUNK, fsize)}"
+                    headers = {"User-Agent": "Mozilla/5.0", "accept-language": "en-US,en", "Range": range_header}
+                    request = urllib.request.Request(StreamUrl, headers=headers, method="GET")
+                    response = urllib.request.urlopen(request) # get a part of the stream as a response
+                    # time measurment
+                    start = (time.time_ns() + 500000) // 1000000
+                    chunk = response.read(CHUNK) # write the response chunk
+                    end = (time.time_ns() + 500000) // 1000000
+                    if chunk:
+                        f.write(chunk)
+                        self.downloaded += CHUNK
+                        self.downloadedOF += CHUNK
+                        self.ProgressLabel.set_label(f"%{(self.downloaded / (size))*100:.2f}")
+                        self.ProgressBar.set_fraction(self.downloaded / (size))
+                        # time for da cool chunk calculations
+                        CHUNKTIME = (end - start) / 1000
+                        if CHUNKTIME == 0:
+                            CHUNKTIME = 1
+                        if CHUNK == 0:
+                            CHUNK = 1024*500
+                        if int(CHUNK / CHUNKTIME) > 20*1024*1024:
+                            CHUNK = 20*1024*1024
+                        else:
+                            CHUNK = int(CHUNK / CHUNKTIME)
+                        #print(str(CHUNK) + " " + str(CHUNKTIME))
+                    else:
+                        # no more data
+                        break
+                else:
+                    time.sleep(1)
+            f.close()
 
 
     def Pause(self, button, *args):
@@ -1121,11 +1126,15 @@ class DownloadsRow(Adw.ActionRow):
             button.set_icon_name("media-playback-start-symbolic")
             button.set_css_classes(["Download-Button"])
             self.is_paused = True
+            if self.ffmpegRun:
+                self.ffmpegProcess.send_signal(subprocess.signal.SIGSTOP)
             print(f"Task #{self.ID}: {self.Name} --Paused")
         else:
             button.set_icon_name("media-playback-pause-symbolic")
             button.set_css_classes(["Pause-Button"])
             self.is_paused = False
+            if self.ffmpegRun:
+                self.ffmpegProcess.send_signal(subprocess.signal.SIGCONT)
             print(f"Task #{self.ID}: {self.Name} --Resumed")
         return
 
