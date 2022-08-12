@@ -957,7 +957,6 @@ class DownloadsRow(Adw.ActionRow):
         self.set_child(self.MainBox)
         threading.Thread(target = self.Download_Handler, daemon = True).start()
 
-    # TODO: ADD The Pause POWER To FFMPEG process
     # TODO: Finalize The Controlling Buttons Stuff And Add Some UI Tweaks
     # TODO: Make Da qieuing Stuff For Both Of FFMPEG and Downloading Processes
     # TODO: Make Da History
