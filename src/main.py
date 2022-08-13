@@ -1348,7 +1348,7 @@ class MushroomApplication(Adw.Application):
         else:
             for D in list(MushroomWindow.Download_Rows.keys()):
                 MushroomWindow.Download_Rows[D].Destroy()
-                print("Canceled #" + str(D))
+                print("Ending #" + str(D))
         print("Cleaning Cache...")
 
         for file in os.scandir(cache_dir + '/DownloadsCache'):

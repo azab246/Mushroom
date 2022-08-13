@@ -14,6 +14,12 @@
   background-color: #0577B3;
 }
 
+.Accept-Button:hover:active {
+  color: white;
+  background-color: #0856a3;
+  transition: background-color 0.1s;
+}
+
 .Cancel-Button {
   color: white;
   background-color: #C51A41;
@@ -22,6 +28,12 @@
 .Cancel-Button:hover {
   color: white;
   background-color: #DC1A41;
+}
+
+.Cancel-Button:hover:active {
+  color: white;
+  background-color: #b3183c;
+  transition: background-color 0.25s;
 }
 
 .Progress-Fail progress {
@@ -39,6 +51,12 @@
   background-color: #0C8C3D;
 }
 
+.Download-Button:hover:active {
+  color: white;
+  background-color: #0b6134;
+  transition: background-color 0.25s;
+}
+
 .Pause-Button {
   color: white;
   background-color: #eca306;
@@ -47,6 +65,12 @@
 .Pause-Button:hover {
   color: white;
   background-color: #ffae00;
+}
+
+.Pause-Button:hover:active {
+  color: white;
+  background-color: #cf910a;
+  transition: background-color 0.25s;
 }
 
 .Other {
