@@ -1118,7 +1118,7 @@ class DownloadsRow(Adw.ActionRow):
                     self.ProgressLabel.set_label(f"%{(self.downloaded / (size))*100:.2f}")
                     self.ProgressBar.set_fraction(self.downloaded / (size))
                     # time for da cool chunk calculations
-                    CHUNKTIME = (end - start) / 1000
+                    CHUNKTIME = (end - start) / 300
                     if CHUNKTIME == 0:
                         CHUNKTIME = 1
                     if CHUNK == 0:
@@ -1132,7 +1132,7 @@ class DownloadsRow(Adw.ActionRow):
                     # no more data
                     break
             else:
-                time.sleep(1)
+                time.sleep(0.3)
         conn.close()
         f.close()
 
