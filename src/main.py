@@ -117,7 +117,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         db = conn.cursor()
         db.execute('''
           CREATE TABLE IF NOT EXISTS Downloads
-          ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [ext] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)
+          ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [ext] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [VF] BIGINT DEFAULT -1, [AF] BIGINT DEFAULT -1)
           ''')
         db.execute('''
           CREATE TABLE IF NOT EXISTS History
@@ -155,11 +155,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
         # Download cache Folder on /chache
         if not os.path.isdir(cache_dir + '/DownloadsCache'):
             os.mkdir(cache_dir + '/DownloadsCache')
-        else:
-            #if path exists cleaning it
-            for file in os.scandir(cache_dir + '/DownloadsCache'):
-                os.remove(file.path)
-
 
         # FFMPEG arch check and Download on /data
         if not os.path.isfile(ffmpeg):
@@ -234,7 +229,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         dt = d.datetime.now().strftime("%d/%m/%Y %H:%M")
         conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
         self.db = conn.cursor()
-        self.db.execute('''CREATE TABLE IF NOT EXISTS Downloads ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [ext] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)''')
+        self.db.execute('''CREATE TABLE IF NOT EXISTS Downloads ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [ext] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [VF] BIGINT DEFAULT -1, [AF] BIGINT DEFAULT -1)''')
         self.db.execute('''INSERT INTO Downloads (url, res, type, location, added_on, size, name, ext) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (url, str(res), dtype, DefaultLocPATH, dt, fsize, name, Ext))
         conn.commit()
         conn.close()
@@ -252,7 +247,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             for video in queue:
                 if str(video[8]) not in list(self.Download_Rows.keys()):
                     print("Adding To Downloads List : " + video[6] + f"  ( {video[2]} )")
-                    self.Download_Rows[str(video[8])] = DownloadsRow(video[0], video[1], video[2], video[3], video[4], video[5], video[6], video[7], video[8])
+                    self.Download_Rows[str(video[8])] = DownloadsRow(video[0], video[1], video[2], video[3], video[4], video[5], video[6], video[7], video[8], video[9], video[10])
                     self.Downloads_List.prepend(self.Download_Rows[str(video[8])])
                     self.TaskManagerPage.set_needs_attention(True)
             if len(list(self.Download_Rows.keys())) == 0:
@@ -295,14 +290,14 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     self.VidVidRes.append([f"{stream.resolution}"])
                     self.ResV.append(f"{stream.resolution}")
                     self.SizesV.append(stream.filesize + self.vid.streams.filter(progressive = False, only_audio = True, file_extension='webm').last().filesize)
-                    print(stream.resolution)
+                    #print(stream.resolution)
             for stream in self.vid.streams.filter(type = "audio", file_extension='webm'):
-                print(stream.bitrate)
+                #print(stream.bitrate)
                 if f"{stream.abr}" not in self.ResA:
                     self.VidAuidRes.append([f"{stream.abr}"])
                     self.ResA.append(f"{stream.abr}")
                     self.SizesA.append(stream.filesize)
-                    print(stream.abr)
+                    #print(stream.abr)
             self.VidTypeList.append(['Video'])
             self.VidTypeList.append(['Audio'])
             print('Setting Up UI...')
@@ -858,9 +853,11 @@ class ListRow(Adw.ActionRow):
 
 
 class DownloadsRow(Adw.ActionRow):
-    def __init__(self, DURL, DRes , DType, DLoc, DAddedOn, DSize, DName, DEXT, DID):
+    def __init__(self, DURL, DRes , DType, DLoc, DAddedOn, DSize, DName, DEXT, DID, VF, AF):
         super().__init__()
         # setting Some Values
+        self.VFP = int(VF)
+        self.AFP = int(AF)
         self.ext = DEXT
         print(self.ext)
         self.ispulse = False
@@ -974,17 +971,16 @@ class DownloadsRow(Adw.ActionRow):
                     sa = yt.streams.filter(only_audio = True, file_extension = "webm").last().filesize
                     size = stream.filesize + sa
                     CHUNK = 1024*500
-                    self.downloaded = 0
-                    self.downloadedOF = 0
-                    self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}_VF.download', stream.filesize)
+                    self.downloaded = self.AFP + self.VFP
+                    #self.downloadedOF = 0
+                    self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}_VF.download', stream.filesize, "VF")
                     if self.is_cancelled:
                         os.remove(f'{DownloadCacheDir}{NIR}_VF.download')
                         self.ProgressLabel.set_label("Canceled")
-                        return
                     else:
                         stream = yt.streams.filter(only_audio = True, file_extension = "webm").last()
-                        self.downloadedOF = 0
-                        self.chunk_handler(size, CHUNK, False, stream.url, f'{DownloadCacheDir}{NIR}_AF.download', stream.filesize)
+                        #self.downloadedOF = 0
+                        self.chunk_handler(size, CHUNK, False, stream.url, f'{DownloadCacheDir}{NIR}_AF.download', stream.filesize, "AF")
                         if self.is_cancelled:
                             os.remove(f'{DownloadCacheDir}{NIR}_AF.download')
                             self.ProgressLabel.set_label("Canceled")
@@ -1020,13 +1016,12 @@ class DownloadsRow(Adw.ActionRow):
                     stream = yt.streams.filter(type = "audio", abr = self.Res, file_extension = "webm").first()
                     size = stream.filesize
                     CHUNK = 1024*500
-                    self.downloaded = 0
-                    self.downloadedOF = 0
-                    self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}.download', size)
+                    self.downloaded = self.AFP + self.VFP
+                    #self.downloadedOF = 0
+                    self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}.download', size, "AF")
                     if self.is_cancelled:
                         os.remove(f'{DownloadCacheDir}{NIR}.download')
                         self.ProgressLabel.set_label("Canceled")
-                        return
                     else:
                         self.ProgressLabel.set_label("Almost Done")
                         threading.Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
@@ -1050,7 +1045,15 @@ class DownloadsRow(Adw.ActionRow):
                         self.ispulse = False
                         self.ProgressBar.set_fraction(1)
                         self.Done()
-                print(f'Task #{self.ID}: Done')
+                if not self.is_cancelled:
+                    print(f'Task #{self.ID}: Done')
+                else:
+                    conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
+                    self.db = conn.cursor()
+                    self.db.execute(f'''DELETE FROM Downloads WHERE id = {self.ID}''')
+                    conn.commit()
+                    conn.close()
+                    print(f'Task #{self.ID}: Canceled')
                 ##############################################################################################################
                 return
             else:
@@ -1078,48 +1081,60 @@ class DownloadsRow(Adw.ActionRow):
 
 
 
-    def chunk_handler(self, size, CHUNK, zero, StreamUrl, Name, fsize):
+    def chunk_handler(self, size, CHUNK, zero, StreamUrl, Name, fsize, ftype):
         # writing chunk and checking if we can use larger 
         # chunk size based on the connection speed
-        with open(Name, 'wb') as f:
-            if zero:
-                self.ProgressLabel.set_label("%0")
-            while self.downloadedOF <= fsize:
-                if self.is_cancelled:
-                    self.ProgressLabel.set_label("Canceled")
-                    break
-                elif not self.is_paused:
-                    range_header = f"bytes={self.downloadedOF}-{min(self.downloadedOF + CHUNK, fsize)}"
-                    headers = {"User-Agent": "Mozilla/5.0", "accept-language": "en-US,en", "Range": range_header}
-                    request = urllib.request.Request(StreamUrl, headers=headers, method="GET")
-                    response = urllib.request.urlopen(request) # get a part of the stream as a response
-                    # time measurment
-                    start = (time.time_ns() + 500000) // 1000000
-                    chunk = response.read(CHUNK) # write the response chunk
-                    end = (time.time_ns() + 500000) // 1000000
-                    if chunk:
-                        f.write(chunk)
-                        self.downloaded += CHUNK
-                        self.downloadedOF += CHUNK
-                        self.ProgressLabel.set_label(f"%{(self.downloaded / (size))*100:.2f}")
-                        self.ProgressBar.set_fraction(self.downloaded / (size))
-                        # time for da cool chunk calculations
-                        CHUNKTIME = (end - start) / 1000
-                        if CHUNKTIME == 0:
-                            CHUNKTIME = 1
-                        if CHUNK == 0:
-                            CHUNK = 1024*500
-                        if int(CHUNK / CHUNKTIME) > 20*1024*1024:
-                            CHUNK = 20*1024*1024
-                        else:
-                            CHUNK = int(CHUNK / CHUNKTIME)
-                        #print(str(CHUNK) + " " + str(CHUNKTIME))
+        f = open(Name, 'ab')
+        if zero:
+            self.ProgressLabel.set_label(f"%{((self.VFP + self.AFP)/size)*100:.2f}")
+            self.ProgressBar.set_fraction((self.VFP + self.AFP) / (size))
+        conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
+        self.db = conn.cursor()
+        if ftype == "VF":
+            self.downloadedOF = self.VFP
+        else:
+            self.downloadedOF = self.AFP
+        while self.downloadedOF+1 < fsize:
+            if self.is_cancelled:
+                self.ProgressLabel.set_label("Canceled")
+                break
+            elif not self.is_paused:
+                range_header = f"bytes={self.downloadedOF+1}-{min(self.downloadedOF + CHUNK, fsize)}"
+                #print(range_header)
+                headers = {"User-Agent": "Mozilla/5.0", "accept-language": "en-US,en", "Range": range_header}
+                request = urllib.request.Request(StreamUrl, headers=headers, method="GET")
+                response = urllib.request.urlopen(request) # get a part of the stream as a response
+                # time measurment
+                start = (time.time_ns() + 500000) // 1000000
+                chunk = response.read(CHUNK) # write the response chunk
+                end = (time.time_ns() + 500000) // 1000000
+                if chunk:
+                    f.write(chunk)
+                    self.downloaded += len(chunk)
+                    self.downloadedOF += len(chunk)
+                    self.db.execute(f'''UPDATE Downloads SET {ftype} = {self.downloadedOF} WHERE id = {self.ID}''')
+                    conn.commit()
+                    #print(range_header)
+                    self.ProgressLabel.set_label(f"%{(self.downloaded / (size))*100:.2f}")
+                    self.ProgressBar.set_fraction(self.downloaded / (size))
+                    # time for da cool chunk calculations
+                    CHUNKTIME = (end - start) / 1000
+                    if CHUNKTIME == 0:
+                        CHUNKTIME = 1
+                    if CHUNK == 0:
+                        CHUNK = 1024*500
+                    if int(CHUNK / CHUNKTIME) > 20*1024*1024:
+                        CHUNK = 20*1024*1024
                     else:
-                        # no more data
-                        break
+                        CHUNK = int((CHUNK / CHUNKTIME)/1) # TODO: change it to the number of S Downloads
+                    #print(str(CHUNK) + " " + str(CHUNKTIME))
                 else:
-                    time.sleep(1)
-            f.close()
+                    # no more data
+                    break
+            else:
+                time.sleep(1)
+        conn.close()
+        f.close()
 
 
     def Pause(self, button, *args):
@@ -1351,8 +1366,8 @@ class MushroomApplication(Adw.Application):
                 print("Ending #" + str(D))
         print("Cleaning Cache...")
 
-        for file in os.scandir(cache_dir + '/DownloadsCache'):
-            os.remove(file.path)
+        #for file in os.scandir(cache_dir + '/DownloadsCache'):
+        #    os.remove(file.path)
 
 
     def QB(self, *args):
