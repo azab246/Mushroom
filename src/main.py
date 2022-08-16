@@ -273,8 +273,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 self.Downloads_Revealer.set_valign(1)
             conn.close()
 
-    # TODO: Make Clear History Button not to be Sensitive in Case that there
-    #       Ist A Data In  History To Clear 
+    
     def UpdateHistory(self, *args):
         if os.path.isfile(ffmpeg):
             conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
@@ -286,9 +285,11 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     self.History_Rows[str(video[8])] = HistoryRow(video[5], video[0], video[1], video[2], video[3], video[4], video[6], video[7], video[8], video[9])
                     self.History_List.prepend(self.History_Rows[str(video[5])])
             if len(list(self.History_Rows.keys())) == 0:
+                self.ClearHistory_Button.set_sensitive(False)
                 self.Nothing_H_Revealer.set_reveal_child(True)
                 self.History_Revealer.set_valign(3)
             else:
+                self.ClearHistory_Button.set_sensitive(True)
                 self.Nothing_H_Revealer.set_reveal_child(False)
                 self.History_Revealer.set_valign(1)
         return
@@ -797,8 +798,22 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def Clear_History(self, button, *args):
+        button.set_sensitive(False)
+        self.Nothing_H_Revealer.set_reveal_child(True)
+        self.History_Revealer.set_valign(3)
+        threading.Thread(target = self.ClearHFunc, daemon = True).start()
         return
-
+    def ClearHFunc(self):
+        if self.History_Rows:
+            conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
+            self.db = conn.cursor()
+            self.db.execute(f'''DELETE FROM History''')
+            conn.commit()
+            conn.close()
+            for row in self.History_Rows.values():
+                row.Remove()
+            self.History_Rows.clear()
+        return
 
 class ListRow(Adw.ActionRow):
     def __init__(self, url , title, author, lengthf, views, Playlist_Content_Group, ListV, ListA):
@@ -1184,25 +1199,39 @@ class DownloadsRow(Adw.ActionRow):
         return
 
 
-    def Cancel(self, button, *args):
+    def Cancel(self, *args):
+        # run Destroy Along With DB_Handling as Canceled
         self.is_cancelled = True
         self.Destroy()
         return
 
 
     def Fail(self, *args):
+        # run Destroy Along With DB_Handling as Failed
         return
 
 
     def Done(self, *args):
+        # run Destroy Along With DB_Handling as Done
         return
+
 
     def Dispose(self, *args):
+        # Dispose Every Object In The Row
         return
 
+
+    def DB_handling(self, status):
+        # Remove From Downloads Db And Add To History DB
+        # then Update History
+        return
+
+
     def Destroy(self, *args):
+        # running Dispose and shutting down any active Process
         if self.ffmpegRun:
             self.ffmpegProcess.kill()
+        threading.Thread(target = self.Dispose, daemon = True).start()
         return
 
 
