@@ -18,6 +18,7 @@
 from concurrent.futures import process
 from curses.ascii import isalpha, isdigit
 import sys
+from typing_extensions import Self
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -86,6 +87,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
     ClearHistory_Revealer = Gtk.Template.Child()
     ClearHistory_Button = Gtk.Template.Child()
     Download_Rows = {}
+    History_Rows = {}
 
     VidRequest = 0
     ListRequest = 0
@@ -121,7 +123,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
           ''')
         db.execute('''
           CREATE TABLE IF NOT EXISTS History
-          ([len] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [Finished_on] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL)
+          ([res] TEXT, [type] TEXT, [location] TEXT, [Finished_on] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [size] TEXT, [ext] TEXT, [url] TEXT, [status] TEXT)
           ''')
         conn.commit()
         conn.close()
@@ -235,15 +237,28 @@ class MushroomWindow(Gtk.ApplicationWindow):
         conn.close()
 
 
-    def AddToHistoryDB(self, ID):
-        return
+    def AddToHistoryDB(self, ID, status):
+        dt = d.datetime.now().strftime("%d/%m/%Y %H:%M")
+        conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
+        db = conn.cursor()
+        x = db.execute(f'''SELECT * FROM Downloads WHERE id = {ID}''')
+        db.execute('''
+          CREATE TABLE IF NOT EXISTS History
+          ([res] TEXT, [type] TEXT, [location] TEXT, [Finished_on] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [size] TEXT, [ext] TEXT, [url] TEXT, [status] TEXT)
+          ''')
+        self.db.execute('''
+          INSERT INTO Downloads 
+          (res, type, location, Finished_on, name, size, ext, url, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ''', (x[1], x[2], x[3], dt, x[6], x[5], x[1], x[7], x[0], status))
+        conn.commit()
+        conn.close()
 
 
     def UpdateDownloads(self, *args):
         if os.path.isfile(ffmpeg):
             conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-            self.db = conn.cursor()
-            queue = self.db.execute("SELECT * FROM Downloads")
+            db = conn.cursor()
+            queue = db.execute("SELECT * FROM Downloads")
             for video in queue:
                 if str(video[8]) not in list(self.Download_Rows.keys()):
                     print("Adding To Downloads List : " + video[6] + f"  ( {video[2]} )")
@@ -261,6 +276,21 @@ class MushroomWindow(Gtk.ApplicationWindow):
     # TODO: Make Clear History Button not to be Sensitive in Case that there
     #       Ist A Data In  History To Clear 
     def UpdateHistory(self, *args):
+        if os.path.isfile(ffmpeg):
+            conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
+            db = conn.cursor()
+            queue = db.execute("SELECT * FROM History")
+            for video in queue:
+                if str(video[8]) not in list(self.History_Rows.keys()):
+                    print("Adding To History List : " + video[4] + f"  ( {video[1]} )")
+                    self.History_Rows[str(video[8])] = HistoryRow(video[5], video[0], video[1], video[2], video[3], video[4], video[6], video[7], video[8], video[9])
+                    self.History_List.prepend(self.History_Rows[str(video[5])])
+            if len(list(self.History_Rows.keys())) == 0:
+                self.Nothing_H_Revealer.set_reveal_child(True)
+                self.History_Revealer.set_valign(3)
+            else:
+                self.Nothing_H_Revealer.set_reveal_child(False)
+                self.History_Revealer.set_valign(1)
         return
 
 
@@ -1065,7 +1095,6 @@ class DownloadsRow(Adw.ActionRow):
         except Exception as e:
             print(e)
             self.ProgressLabel.set_label("Failed")
-            self.ProgressBar.set_css_classes(['Cancel-Button'])
             time.sleep(1)
             self.ProgressLabel.set_label("  Moving To History")
             time.sleep(4)
@@ -1168,6 +1197,8 @@ class DownloadsRow(Adw.ActionRow):
     def Done(self, *args):
         return
 
+    def Dispose(self, *args):
+        return
 
     def Destroy(self, *args):
         if self.ffmpegRun:
@@ -1176,12 +1207,152 @@ class DownloadsRow(Adw.ActionRow):
 
 
 class HistoryRow(Adw.ActionRow):
-    def __init__(self, VID):
+    def __init__(self, id, res, type, loc, Finished_on, name, size, ext, url, status):
         super().__init__()
+        self.status = status
+        self.id = id
+        self.res = res
+        self.type = type
+        self.loc = loc
+        self.name = name
+        self.size = size
+        self.ext = ext
+        self.url = url
+        # setting Self
+        self.set_css_classes(['card'])
+        self.set_hexpand(True)
+        # setting Main Box
+        self.MainBox = Gtk.Box()
+        self.MainBox.set_margin_top(20)
+        self.MainBox.set_margin_bottom(20)
+        self.MainBox.set_margin_start(5)
+        self.MainBox.set_margin_end(10)
+        self.MainBox.set_hexpand(True)
+        # setting Main Icon
+        if type == "Video":
+            self.MainIcon = Gtk.Image.new_from_icon_name("emblem-videos-symbolic")
+        else:
+            self.MainIcon = Gtk.Image.new_from_icon_name("emblem-music-symbolic")
+        self.MainIcon.set_margin_end(20)
+        self.MainIcon.set_pixel_size(50)
+        self.MainBox.set_child(self.MainIcon)
+        # setting Inner Box 1
+        self.InnerBox1 = Gtk.Box()
+        self.InnerBox1.set_hexpand(True)
+        self.MainBox.set_child(self.InnerBox1)
+        # setting Inner Box 2
+        self.InnerBox2 = Gtk.Box()
+        self.InnerBox2.set_hexpand(True)
+        self.InnerBox2.set_orientation(1)
+        self.InnerBox2.set_margin_end(20)
+        # setting Title
+        if len(name) > 35:
+            Namex = name[0:34] + '...'
+            self.Title = Gtk.Label.new(Namex + f' ( {ext.upper()} )')
+        else:
+            self.Title = Gtk.Label.new(name + f' ( {ext.upper()} )')
+        self.Title.set_ellipsize(3)
+        self.Title.set_max_width_chars(40)
+        self.Title.set_xalign(0)
+        self.Title.add_css_class("heading")
+        self.Title.set_margin_top(5)
+        self.InnerBox2.set_child(self.Title)
+        # setting Subtitle
+        if type == "Video":
+            self.Subtitle = Gtk.Label.new("Finished On : " + Finished_on + "   Resouloution : " + res + "   Status : " + status)
+        else:
+            self.Subtitle = Gtk.Label.new("Finished On : " + Finished_on + "   Bitrate : " + res + "   Status : " + status)
+        self.Subtitle.set_ellipsize(3)
+        self.Subtitle.set_max_width_chars(25)
+        self.Subtitle.set_xalign(0)
+        self.Title.add_css_class("dim-label")
+        self.Subtitle.set_margin_top(5)
+        self.InnerBox2.set_child(self.Subtitle)
+        # setting Status Based Button
+        if status == "Failed" or status == "Canceled":
+            self.RetryButton = Gtk.Button.new_from_icon_name("view-refresh-symbolic")
+            self.RetryButton.set_valign(3)
+            self.RetryButton.set_margin_end(10)
+            self.RetryButton.set_tooltip_text("Retry")
+            self.RetryButton.set_css_classes(["osd", "circular"])
+            self.RemoveButton.connect("clicked", self.Retry)
+            self.InnerBox1.set_child(self.RetryButton)
+        else:
+            self.OpenLocButton = Gtk.Button.new_from_icon_name("folder-symbolic")
+            self.OpenLocButton.set_valign(3)
+            self.OpenLocButton.set_margin_end(10)
+            self.OpenLocButton.set_tooltip_text("Open Location")
+            self.OpenLocButton.set_css_classes(["osd", "circular"])
+            self.RemoveButton.connect("clicked", self.OpenLoc)
+            self.InnerBox1.set_child(self.OpenLocButton)
+        # setting Remove Button
+        self.RemoveButton = Gtk.Button.new_from_icon_name("action-unavailable-symbolic")
+        self.RemoveButton.set_valign(3)
+        self.RemoveButton.set_tooltip_text("Remove From History")
+        self.RemoveButton.set_css_classes(["osd", "circular"])
+        self.RemoveButton.connect("clicked", self.Remove)
+        self.InnerBox1.set_child(self.RemoveButton)
+        self.set_child(self.MainBox)
 
-    def Destroy(self, *args):
+
+    def Dispose(self, *args):
+        self.RemoveButton.set_sensitive(False)
+        x = 200 #time in millisecond
+        v = 1
+        for i in range(x):
+            v = v - 0.01
+            self.set_opacity(v)
+            time.sleep(x/100000)
+        if self.status == "F" or self.status == "C":
+            self.InnerBox2.remove(self.RetryButton)
+            self.RetryButton.run_dispose()
+        else:
+            self.InnerBox2.remove(self.OpenLocButton)
+            self.OpenLocButton.run_dispose()
+        self.InnerBox2.remove(self.RemoveButton)
+        self.RemoveButton.run_dispose()
+        self.InnerBox2.remove(self.Title)
+        self.Title.run_dispose()
+        self.InnerBox2.remove(self.Subtitle)
+        self.Subtitle.run_dispose()
+        self.InnerBox1.remove(self.InnerBox2)
+        self.InnerBox2.run_dispose()
+        self.MainBox.remove(self.InnerBox1)
+        self.InnerBox1.run_dispose()
+        self.MainBox.remove(self.MainIcon)
+        self.MainIcon.run_dispose()
+        self.remove(self.MainBox)
+        self.MainBox.run_dispose()
+        self.run_dispose()
         return
 
+    def DB_remove(self, *args):
+        conn = sqlite3.connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
+        self.db = conn.cursor()
+        self.db.execute(f'''DELETE FROM History WHERE id = {self.id}''')
+        conn.commit()
+        conn.close()
+        MushroomWindow.History_Rows.pop(self.id)
+
+    def Remove(self, *args):
+        threading.Thread(target = self.Dispose, daemon = True).start()
+        threading.Thread(target = self.DB_remove, daemon = True).start()
+        return
+
+    def OpenLoc(self, *args):
+        subprocess.call(["xdg-open", self.loc])
+        return
+
+    def RetryF(self, *args):
+        self.RetryButton.set_sensitive(False)
+        MushroomWindow.AddToTasksDB(self.url, self.res, self.type, self.size, self.name)
+        MushroomWindow.UpdateDownloads()
+        self.RetryButton.set_sensitive(True)
+        return
+
+    def Retry(self, *args):
+        threading.Thread(target = self.RetryF, daemon = True).start()
+        return
 
 
 class AboutDialog(Gtk.AboutDialog):
