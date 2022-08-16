@@ -15,10 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from concurrent.futures import process
 from curses.ascii import isalpha, isdigit
 import sys
-from typing_extensions import Self
 import gi
 
 gi.require_version('Gtk', '4.0')
