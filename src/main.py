@@ -208,7 +208,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
         return result
 
 
-
     def size_format(self, size):
             tags = ["bytes", "Kb", "Mb", "Gb", "Tb"]
             if bool(search('[a-zA-Z]', str(size))):
@@ -222,13 +221,11 @@ class MushroomWindow(Gtk.ApplicationWindow):
             return str(round(double_bytes, 2)) + " " + tags[i]
 
 
-
     def AddToTasksDB(self, url, res, dtype, size, name):
         if dtype == 'Video':
             Ext = DefaultVContainer
         else:
             Ext = DefaultAContainer
-        #print(DefaultLocPATH)
         fsize = self.size_format(size)
         dt = d.now().strftime("%d/%m/%Y %H:%M")
         conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
@@ -277,6 +274,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 self.Nothing_D_Revealer.set_reveal_child(True)
                 self.TaskManagerPage.set_needs_attention(False)
             else:
+                self.TaskManagerPage.set_needs_attention(True)
                 self.Nothing_D_Revealer.set_reveal_child(False)
             conn.close()
 
@@ -291,7 +289,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     print("Adding To History List : " + video[4] + f"  ( {video[1]} )")
                     self.History_Rows[video[5]] = HistoryRow(video[5], video[0], video[1], video[2], video[3], video[4], video[6], video[7], video[8], video[9])
                     self.History_List.prepend(self.History_Rows[video[5]])
-                #print(video[5])
             if len(list(self.History_Rows.keys())) == 0:
                 self.ClearHistory_Button.set_sensitive(False)
                 self.Nothing_H_Revealer.set_reveal_child(True)
@@ -327,14 +324,11 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     self.VidVidRes.append([f"{stream.resolution}"])
                     self.ResV.append(f"{stream.resolution}")
                     self.SizesV.append(stream.filesize + self.vid.streams.filter(progressive = False, only_audio = True, file_extension='webm').last().filesize)
-                    #print(stream.resolution)
             for stream in self.vid.streams.filter(type = "audio", file_extension='webm'):
-                #print(stream.bitrate)
                 if f"{stream.abr}" not in self.ResA:
                     self.VidAuidRes.append([f"{stream.abr}"])
                     self.ResA.append(f"{stream.abr}")
                     self.SizesA.append(stream.filesize)
-                    #print(stream.abr)
             self.VidTypeList.append(['Video'])
             self.VidTypeList.append(['Audio'])
             print('Setting Up UI...')
@@ -885,7 +879,6 @@ class DownloadsRow(Adw.ActionRow):
         self.VFP = int(VF)
         self.AFP = int(AF)
         self.ext = DEXT
-        #print(self.ext)
         self.add_css_class("card")
         self.Name = DName
         self.URL = DURL
@@ -1010,8 +1003,6 @@ class DownloadsRow(Adw.ActionRow):
                         self.ProgressLabel.set_label("Canceled")
                     else:
                         stream = yt.streams.filter(only_audio = True, file_extension = "webm").last()
-                        #print(self.AFP)
-                        #print(stream.filesize)
                         if self.AFP+1 < stream.filesize:
                             self.chunk_handler(size, CHUNK, False, stream.url, f'{DownloadCacheDir}{NIR}_AF.download', stream.filesize, "AF")
                         if self.is_cancelled:
@@ -1029,7 +1020,7 @@ class DownloadsRow(Adw.ActionRow):
                             self.Fname = f"{DownloadCacheDir}{NIR}.{self.ext}"
                             cmd = f'{ffmpegexec} -i {VFname} -i {AFname} -c:v copy -c:a aac {self.Fname} -y'
                             ####################################################################
-                            #print(f"#{self.ID}: Running ffmpeg...")
+                            print(f"#{self.ID}: Running ffmpeg...")
                             self.ffmpegRun = True
                             self.ffmpegProcess = subprocess.Popen(cmd, shell = True)
                             self.ffmpegProcess.wait()
@@ -1121,7 +1112,6 @@ class DownloadsRow(Adw.ActionRow):
             self.ProgressBar.set_fraction(0)
         conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
         self.db = conn.cursor()
-        #print(fsize)
         if ftype == "VF":
             self.downloadedOF = self.VFP
         else:
@@ -1132,7 +1122,6 @@ class DownloadsRow(Adw.ActionRow):
                 break
             elif not self.is_paused:
                 range_header = f"bytes={self.downloadedOF+1}-{min(self.downloadedOF + CHUNK, fsize)}"
-                #print(range_header)
                 headers = {"User-Agent": "Mozilla/5.0", "accept-language": "en-US,en", "Range": range_header}
                 request = DRequest.Request(StreamUrl, headers=headers, method="GET")
                 response = DRequest.urlopen(request) # get a part of the stream as a response
