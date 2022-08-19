@@ -109,7 +109,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         data_dir = GLib.get_user_data_dir()
         ConfigFileDir = GLib.get_user_cache_dir() + "/tmp/config"
         ffmpeg = f'{data_dir}/ffmpeg'
-        ffmpegexec = ffmpeg + " -hide_banner -loglevel error"
+        ffmpegexec = ffmpeg #+ " -hide_banner -loglevel error"
         DownloadCacheDir = cache_dir + '/DownloadsCache/'
         # Database + DLoc File
         conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
@@ -140,9 +140,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 f.close()
         self.MainBuffer.connect("inserted_text", self.islistq, self, True)
         self.MainBuffer.connect("deleted_text", self.islistq, self, True)
-        Thread(target = self.AppData_Initialization, daemon = True).start()
-        Thread(target = self.UpdateDownloads, daemon = True).start()
-        Thread(target = self.UpdateHistory, daemon = True).start()
+        self.AppData_Initialization()
+        self.UpdateDownloads()
+        self.UpdateHistory()
         
         print("All New Downloads Will Be Exported At : " + DefaultLocPATH)
         print("New Video Files Will Be Exported As : " + DefaultVContainer)
@@ -225,7 +225,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             Ext = DefaultVContainer
         else:
             Ext = DefaultAContainer
-        print(DefaultLocPATH)
+        #print(DefaultLocPATH)
         fsize = self.size_format(size)
         dt = d.now().strftime("%d/%m/%Y %H:%M")
         conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
@@ -241,7 +241,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
         conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
         db = conn.cursor()
         x = list(db.execute(f'''SELECT * FROM Downloads WHERE id = {UID}'''))
-        print(x)
         x = x[0]
         conn.commit()
         db.execute('''
@@ -270,6 +269,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     self.Downloads_List.prepend(self.Download_Rows[str(video[8])])
                     self.TaskManagerPage.set_needs_attention(True)
             if len(list(self.Download_Rows.keys())) == 0:
+                for file in os.scandir(cache_dir + '/DownloadsCache'):
+                    os.remove(file.path)
                 self.Nothing_D_Revealer.set_reveal_child(True)
                 self.Downloads_Revealer.set_valign(3)
                 self.TaskManagerPage.set_needs_attention(False)
@@ -898,7 +899,6 @@ class DownloadsRow(Adw.ActionRow):
         self.AFP = int(AF)
         self.ext = DEXT
         #print(self.ext)
-        self.ispulse = False
         self.add_css_class("card")
         self.Name = DName
         self.URL = DURL
@@ -906,8 +906,10 @@ class DownloadsRow(Adw.ActionRow):
         self.Type = DType
         self.Loc = DLoc
         self.Res = DRes
+        self.ispulse = False
         self.is_paused = False
         self.is_cancelled = False
+        self.fkilled = False
         # Setting MainBox
         self.MainRevealer = Gtk.Revealer()
         self.MainRevealer.set_reveal_child(True)
@@ -1013,32 +1015,41 @@ class DownloadsRow(Adw.ActionRow):
                     size = stream.filesize + sa
                     CHUNK = 1024*500
                     self.downloaded = self.AFP + self.VFP
-                    self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}_VF.download', stream.filesize, "VF")
+                    if self.VFP+1 < stream.filesize:
+                        self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}_VF.download', stream.filesize, "VF")
                     if self.is_cancelled:
-                        os.remove(f'{DownloadCacheDir}{NIR}_VF.download')
+                        if os.path.isfile(f'{DownloadCacheDir}{NIR}_VF.download'):
+                            os.remove(f'{DownloadCacheDir}{NIR}_VF.download')
                         self.ProgressLabel.set_label("Canceled")
                     else:
                         stream = yt.streams.filter(only_audio = True, file_extension = "webm").last()
-                        self.chunk_handler(size, CHUNK, False, stream.url, f'{DownloadCacheDir}{NIR}_AF.download', stream.filesize, "AF")
+                        #print(self.AFP)
+                        #print(stream.filesize)
+                        if self.AFP+1 < stream.filesize:
+                            self.chunk_handler(size, CHUNK, False, stream.url, f'{DownloadCacheDir}{NIR}_AF.download', stream.filesize, "AF")
                         if self.is_cancelled:
-                            os.remove(f'{DownloadCacheDir}{NIR}_AF.download')
+                            if os.path.isfile(f'{DownloadCacheDir}{NIR}_AF.download'):
+                                os.remove(f'{DownloadCacheDir}{NIR}_AF.download')
                             self.ProgressLabel.set_label("Canceled")
                         else:
                             self.ProgressLabel.set_label("Almost Done")
                             Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
                             AFname = f"{DownloadCacheDir}{NIR}_AF.webm"
                             VFname = f"{DownloadCacheDir}{NIR}_VF.mp4"
+                            if os.path.isfile(f"{DownloadCacheDir}{NIR}_AF.download") and os.path.isfile(f"{DownloadCacheDir}{NIR}_VF.download"):
+                                os.rename(f"{DownloadCacheDir}{NIR}_AF.download", AFname)
+                                os.rename(f"{DownloadCacheDir}{NIR}_VF.download", VFname)
                             self.Fname = f"{DownloadCacheDir}{NIR}.{self.ext}"
-                            os.rename(f"{DownloadCacheDir}{NIR}_AF.download", AFname)
-                            os.rename(f"{DownloadCacheDir}{NIR}_VF.download", VFname)
-                            cmd = f'{ffmpegexec} -i {VFname} -i {AFname} -c:v copy -c:a aac {self.Fname}'
+                            cmd = f'{ffmpegexec} -i {VFname} -i {AFname} -c:v copy -c:a aac {self.Fname} -y'
                             ####################################################################
-                            print(f"#{self.ID}: Running ffmpeg...")
+                            #print(f"#{self.ID}: Running ffmpeg...")
                             self.ffmpegRun = True
                             self.ffmpegProcess = subprocess.Popen(cmd, shell = True)
                             self.ffmpegProcess.wait()
                             self.ffmpegRun = False
                             #######################################
+                            if self.fkilled:
+                                return
                             os.remove(AFname)
                             os.remove(VFname)
                             if not self.is_cancelled:
@@ -1056,16 +1067,19 @@ class DownloadsRow(Adw.ActionRow):
                     size = stream.filesize
                     CHUNK = 1024*500
                     self.downloaded = self.AFP + self.VFP
-                    self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}.download', size, "AF")
+                    if self.AFP+1 < stream.filesize:
+                        self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}.download', size, "AF")
                     if self.is_cancelled:
-                        os.remove(f'{DownloadCacheDir}{NIR}.download')
+                        if os.path.isfile(f'{DownloadCacheDir}{NIR}.download'):
+                            os.remove(f'{DownloadCacheDir}{NIR}.download')
                         self.ProgressLabel.set_label("Canceled")
                     else:
                         self.ProgressLabel.set_label("Almost Done")
                         Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
                         self.Fname = f'{DownloadCacheDir}{NIR}.webm'
-                        os.rename(f'{DownloadCacheDir}{NIR}.download', self.Fname)
-                        cmd = f'{ffmpegexec} -i {self.Fname} -ab {self.Res[0:-3]} -f {self.ext} {self.Fname[0 : -4]}{self.ext}'
+                        if os.path.isfile(f'{DownloadCacheDir}{NIR}.download'):
+                            os.rename(f'{DownloadCacheDir}{NIR}.download', self.Fname)
+                        cmd = f'{ffmpegexec} -i {self.Fname} -ab {self.Res[0:-3]} -f {self.ext} {self.Fname[0 : -4]}{self.ext} -y'
                         #########################################################################################
                         print(f"#{self.ID}: Running ffmpeg...")
                         self.ffmpegRun = True
@@ -1073,6 +1087,8 @@ class DownloadsRow(Adw.ActionRow):
                         self.ffmpegProcess.wait()
                         self.ffmpegRun = False
                         ##########################################################
+                        if self.fkilled:
+                            return
                         os.remove(self.Fname)
                         if not self.is_cancelled:
                             move(f'{self.Fname[0 : -4]}{self.ext}', f'{self.Loc}{NIR}.{self.ext}')
@@ -1118,6 +1134,7 @@ class DownloadsRow(Adw.ActionRow):
             self.ProgressBar.set_fraction(0)
         conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
         self.db = conn.cursor()
+        #print(fsize)
         if ftype == "VF":
             self.downloadedOF = self.VFP
         else:
@@ -1142,7 +1159,6 @@ class DownloadsRow(Adw.ActionRow):
                     self.downloadedOF += len(chunk)
                     self.db.execute(f'''UPDATE Downloads SET {ftype} = {self.downloadedOF} WHERE id = {self.ID}''')
                     conn.commit()
-                    #print(range_header)
                     self.ProgressLabel.set_label(f"%{(self.downloaded / (size))*100:.2f}")
                     self.ProgressBar.set_fraction(self.downloaded / (size))
                     # time for da cool chunk calculations
@@ -1258,11 +1274,8 @@ class DownloadsRow(Adw.ActionRow):
 
     def killffmpeg(self):
         if self.ffmpegRun:
+            self.fkilled = True
             self.ffmpegProcess.kill()
-            if self.Type == "Video":
-                os.remove(self.Fname)
-            else:
-                os.remove(self.Fname[0 : -4]+self.ext)
 
 
 class HistoryRow(Adw.ActionRow):
@@ -1608,10 +1621,6 @@ class MushroomApplication(Adw.Application):
             for D in list(win.Download_Rows.keys()):
                 win.Download_Rows[D].killffmpeg()
                 print("Ending #" + str(D))
-        #print("Cleaning Cache...")
-
-        #for file in os.scandir(cache_dir + '/DownloadsCache'):
-        #    os.remove(file.path)
 
 
     def QB(self, *args):
