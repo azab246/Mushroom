@@ -109,7 +109,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         data_dir = GLib.get_user_data_dir()
         ConfigFileDir = GLib.get_user_cache_dir() + "/tmp/config"
         ffmpeg = f'{data_dir}/ffmpeg'
-        ffmpegexec = ffmpeg #+ " -hide_banner -loglevel error"
+        ffmpegexec = ffmpeg + " -hide_banner -loglevel error"
         DownloadCacheDir = cache_dir + '/DownloadsCache/'
         # Database + DLoc File
         conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
