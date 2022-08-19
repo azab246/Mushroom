@@ -84,3 +84,14 @@
   padding-top : 5px;
   padding-bottom : 5px;
 }
+
+.Clear-Button:hover {
+  color: white;
+  background-color: #e6083542;
+}
+
+.Clear-Button:hover:active {
+  color: white;
+  background-color: #e6083462;
+  transition: background-color 0.25s;
+}

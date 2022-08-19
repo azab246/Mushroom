@@ -43,19 +43,23 @@ APPID = 'com.github.azab246.mushroom'
 class MushroomWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'MushroomWindow'
 
+
     MainBuffer = Gtk.Template.Child()
     MainEntry = Gtk.Template.Child()
-    MainRevealer = Gtk.Template.Child()
     ListSuggestionRevealer = Gtk.Template.Child()
     SubmitButton = Gtk.Template.Child()
-    List_revealer = Gtk.Template.Child()
-    loading_revealer = Gtk.Template.Child()
-    vid_revealer = Gtk.Template.Child()
-    done_revealer = Gtk.Template.Child()
-    fail_revealer = Gtk.Template.Child()
+    H_D_Revealer = Gtk.Template.Child()
+    ######################################################
+    LoadingPage = Gtk.Template.Child()
+    ListPage = Gtk.Template.Child()
+    MainPage = Gtk.Template.Child()
+    VidPage = Gtk.Template.Child()
+    DonePage = Gtk.Template.Child()
+    FailPage = Gtk.Template.Child()
+    ########################################################
+    H_D_Button = Gtk.Template.Child()
     Playlist_Content_Group = Gtk.Template.Child()
-    Carousel = Gtk.Template.Child()
-    LoadingAdwPage = Gtk.Template.Child()
+    MainLeaflet = Gtk.Template.Child()
     ListNameLabel = Gtk.Template.Child()
     VidDetails = Gtk.Template.Child()
     VidTypeBox = Gtk.Template.Child()
@@ -68,19 +72,18 @@ class MushroomWindow(Gtk.ApplicationWindow):
     SuggestionCheck = Gtk.Template.Child()
     Error_Label = Gtk.Template.Child()
     LoadingProgressBar = Gtk.Template.Child()
-    Downloads_List = Gtk.Template.Child()
     MainToastOverlay = Gtk.Template.Child()
     TaskManagerPage = Gtk.Template.Child()
     GlobalRevealer = Gtk.Template.Child()
-    Nothing_D_Revealer = Gtk.Template.Child()
     Fail_Button = Gtk.Template.Child()
     ListGlobalSwitch = Gtk.Template.Child()
-    TMLable = Gtk.Template.Child()
-    H_D_Carousel = Gtk.Template.Child()
-    Downloads_Revealer = Gtk.Template.Child()
-    History_Revealer = Gtk.Template.Child()
+    H_D_Leaflet = Gtk.Template.Child()
+    DownloadsPage = Gtk.Template.Child()
+    HistoryPage = Gtk.Template.Child()
     History_List = Gtk.Template.Child()
+    Downloads_List = Gtk.Template.Child()
     Nothing_H_Revealer = Gtk.Template.Child()
+    Nothing_D_Revealer = Gtk.Template.Child()
     ClearHistory_Revealer = Gtk.Template.Child()
     ClearHistory_Button = Gtk.Template.Child()
     Download_Rows = {}
@@ -272,11 +275,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 for file in os.scandir(cache_dir + '/DownloadsCache'):
                     os.remove(file.path)
                 self.Nothing_D_Revealer.set_reveal_child(True)
-                self.Downloads_Revealer.set_valign(3)
                 self.TaskManagerPage.set_needs_attention(False)
             else:
                 self.Nothing_D_Revealer.set_reveal_child(False)
-                self.Downloads_Revealer.set_valign(1)
             conn.close()
 
     
@@ -290,15 +291,13 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     print("Adding To History List : " + video[4] + f"  ( {video[1]} )")
                     self.History_Rows[video[5]] = HistoryRow(video[5], video[0], video[1], video[2], video[3], video[4], video[6], video[7], video[8], video[9])
                     self.History_List.prepend(self.History_Rows[video[5]])
-                print(video[5])
+                #print(video[5])
             if len(list(self.History_Rows.keys())) == 0:
                 self.ClearHistory_Button.set_sensitive(False)
                 self.Nothing_H_Revealer.set_reveal_child(True)
-                self.History_Revealer.set_valign(3)
             else:
                 self.ClearHistory_Button.set_sensitive(True)
                 self.Nothing_H_Revealer.set_reveal_child(False)
-                self.History_Revealer.set_valign(1)
         return
 
 
@@ -463,10 +462,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 return 
 
     
-    def loading_func(self, RevealerFrom, RevealerTo):
-        self.loading_revealer.set_reveal_child(True)
-        self.Carousel.scroll_to(self.loading_revealer, True)
-        RevealerFrom.set_reveal_child(False)
+    def loading_func(self, Target):
+        self.MainLeaflet.set_visible_child(self.LoadingPage)
 
         self.loading = 1
 
@@ -474,9 +471,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.LoadingProgressBar.pulse()
             sleep(0.25)
 
-        RevealerTo.set_reveal_child(True)
-        self.Carousel.scroll_to(RevealerTo, True)
-        self.loading_revealer.set_reveal_child(False)
+        self.MainLeaflet.set_visible_child(Target)
 
 
 
@@ -534,14 +529,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.Error_Label.set_label("Error: Conection Error")
         else:
             self.Error_Label.set_label("Error: "+ str(errno))
-        self.MainRevealer.set_reveal_child(False)
         self.SubmitButton.set_sensitive(False)
         self.SuggestionCheck.set_active(False)
-        self.List_revealer.set_reveal_child(False)
-        self.vid_revealer.set_reveal_child(False)
-        self.done_revealer.set_reveal_child(False)
-        self.fail_revealer.set_reveal_child(True)
-        self.Carousel.scroll_to(self.fail_revealer, True)
+        self.MainLeaflet.set_visible_child(self.FailPage)
 
 
 
@@ -568,9 +558,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 VidSize = self.SizesA[self.VidResBox.get_active()]
             self.AddToTasksDB(self.VidURL, VidRes, VidType, VidSize, self.VidName)
             self.UpdateDownloads()
-            self.vid_revealer.set_reveal_child(False)
-            self.done_revealer.set_reveal_child(True)
-            self.Carousel.scroll_to(self.done_revealer, True)
+            self.MainLeaflet.set_visible_child(self.DonePage)
         except Exception as err:
             if err:
                 self.loading = 0
@@ -598,7 +586,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 return
             # Setting Loading 
             self.loading = 1
-            Thread(target = self.loading_func, args = [self.List_revealer, self.done_revealer], daemon = True).start()
+            Thread(target = self.loading_func, args = [self.DonePage], daemon = True).start()
             # Getting Download Type
             if self.ListTypeBox.get_active() == 0:
                 ListRes = self.LResV[self.ListResBox.get_active()]
@@ -639,24 +627,24 @@ class MushroomWindow(Gtk.ApplicationWindow):
         x = self.islistq(printT = False)
         if os.path.isfile(ffmpeg):
             if x == 1:
-                Thread(target = self.loading_func, args = [self.MainRevealer, self.List_revealer], daemon = True).start()
+                Thread(target = self.loading_func, args = [self.ListPage], daemon = True).start()
                 Thread(target = self.Playlist_Data, daemon = True).start()
                 print("Submitted A Playlist Downloading Request")
             elif x == 2:
-                Thread(target = self.loading_func, args = [self.MainRevealer, self.vid_revealer], daemon=True).start()
+                Thread(target = self.loading_func, args = [self.VidPage], daemon=True).start()
                 Thread(target = self.Video_Data, daemon=True).start()
                 print("Submitted A Video Downloading Request")
             elif x == 3:
                 return
             elif x == 0:
                 if self.SuggestionCheck.get_active():
-                    Thread(target = self.loading_func, args = [self.MainRevealer, self.List_revealer], daemon = True).start()
+                    Thread(target = self.loading_func, args = [self.ListPage], daemon = True).start()
                     Thread(target = self.Playlist_Data, daemon = True).start()
                     print("Submitted A Playlist Downloading Request")
                     self.ListSuggestionRevealer.set_reveal_child(False)
                     self.SuggestionCheck.set_active(False)
                 else:
-                    Thread(target = self.loading_func, args = [self.MainRevealer, self.vid_revealer], daemon=True).start()
+                    Thread(target = self.loading_func, args = [self.VidPage], daemon=True).start()
                     Thread(target = self.Video_Data, daemon=True).start()
                     print("Submitted A Video Downloading Request")
                     self.ListSuggestionRevealer.set_reveal_child(False)
@@ -735,15 +723,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
         self.VidSizeLabel.set_label("")
         self.MainEntry.set_text("")
         loading = 0
-        self.MainRevealer.set_reveal_child(True)
         self.SubmitButton.set_sensitive(False)
         self.SuggestionCheck.set_active(False)
         self.ListSuggestionRevealer.set_reveal_child(False)
-        self.Carousel.scroll_to(self.MainRevealer, True)
-        self.List_revealer.set_reveal_child(False)
-        self.vid_revealer.set_reveal_child(False)
-        self.done_revealer.set_reveal_child(False)
-        self.fail_revealer.set_reveal_child(False)
+        self.MainLeaflet.set_visible_child(self.MainPage)
         print("Done")
         button.set_sensitive(True)
 
@@ -785,19 +768,13 @@ class MushroomWindow(Gtk.ApplicationWindow):
     def On_H_D_Button_Clicked(self, button):
         if button.get_icon_name() == 'preferences-system-time-symbolic':
             button.set_icon_name('document-save-symbolic')
-            self.TMLable.set_label("History")
             button.set_tooltip_text("View Downloads")
-            self.Downloads_Revealer.set_reveal_child(False)
-            self.H_D_Carousel.scroll_to(self.History_Revealer, True)
-            self.History_Revealer.set_reveal_child(True)
+            self.H_D_Leaflet.set_visible_child(self.HistoryPage)
             self.ClearHistory_Revealer.set_reveal_child(True)
         else:
             button.set_icon_name('preferences-system-time-symbolic')
-            self.TMLable.set_label("Downloads")
             button.set_tooltip_text("View History")
-            self.Downloads_Revealer.set_reveal_child(True)
-            self.History_Revealer.set_reveal_child(False)
-            self.H_D_Carousel.scroll_to(self.Downloads_Revealer, True)
+            self.H_D_Leaflet.set_visible_child(self.DownloadsPage)
             self.ClearHistory_Revealer.set_reveal_child(False)
 
 
@@ -808,6 +785,16 @@ class MushroomWindow(Gtk.ApplicationWindow):
             for row in self.History_Rows.values():
                 row.Remove()
         return
+
+    @Gtk.Template.Callback()
+    def ShowHDSwitch(self, source, *args):
+        if source.get_mapped():
+            self.H_D_Revealer.set_reveal_child(True)
+            if self.H_D_Button.get_tooltip_text() == 'View Downloads':
+                self.ClearHistory_Revealer.set_reveal_child(True)
+        else: 
+            self.H_D_Revealer.set_reveal_child(False)
+            self.ClearHistory_Revealer.set_reveal_child(False)
 
 class ListRow(Adw.ActionRow):
     def __init__(self, url , title, author, lengthf, views, Playlist_Content_Group, ListV, ListA):
@@ -1266,7 +1253,6 @@ class DownloadsRow(Adw.ActionRow):
         win.Download_Rows.pop(str(self.ID))
         if len(list(win.Download_Rows.keys())) == 0:
             win.Nothing_D_Revealer.set_reveal_child(True)
-            win.Downloads_Revealer.set_valign(3)
             win.TaskManagerPage.set_needs_attention(False)
         self.killffmpeg()
         self.Dispose()
@@ -1414,11 +1400,9 @@ class HistoryRow(Adw.ActionRow):
         if len(list(win.History_Rows.keys())) == 0:
             win.ClearHistory_Button.set_sensitive(False)
             win.Nothing_H_Revealer.set_reveal_child(True)
-            win.History_Revealer.set_valign(3)
         else:
             win.ClearHistory_Button.set_sensitive(True)
             win.Nothing_H_Revealer.set_reveal_child(False)
-            win.History_Revealer.set_valign(1)
 
     def Remove(self, *args):
         Thread(target = self.Dispose, daemon = True).start()
