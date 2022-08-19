@@ -879,7 +879,6 @@ class DownloadsRow(Adw.ActionRow):
         self.VFP = int(VF)
         self.AFP = int(AF)
         self.ext = DEXT
-        self.add_css_class("card")
         self.Name = DName
         self.URL = DURL
         self.ID = DID
@@ -892,6 +891,7 @@ class DownloadsRow(Adw.ActionRow):
         self.fkilled = False
         # Setting MainBox
         self.MainRevealer = Gtk.Revealer()
+        self.MainRevealer.add_css_class("card")
         self.MainRevealer.set_reveal_child(True)
         self.MainRevealer.set_transition_duration(150)
         self.MainRevealer.set_transition_type(1)
@@ -1200,6 +1200,7 @@ class DownloadsRow(Adw.ActionRow):
 
     def Dispose(self, *args):
         self.MainRevealer.set_reveal_child(False)
+        sleep(0.16)
         self.ispulse = False
         self.ProgressBar.unparent()
         self.ProgressLabel.unparent()
@@ -1244,7 +1245,7 @@ class DownloadsRow(Adw.ActionRow):
             win.Nothing_D_Revealer.set_reveal_child(True)
             win.TaskManagerPage.set_needs_attention(False)
         self.killffmpeg()
-        self.Dispose()
+        Thread(target = self.Dispose, daemon = True).start()
         return
 
     def killffmpeg(self):
@@ -1266,10 +1267,10 @@ class HistoryRow(Adw.ActionRow):
         self.ext = ext
         self.url = url
         # setting Self
-        self.set_css_classes(['card'])
         self.set_hexpand(True)
         # setting Main Box
         self.MainRevealer = Gtk.Revealer()
+        self.MainRevealer.set_css_classes(['card'])
         self.MainRevealer.set_reveal_child(True)
         self.MainRevealer.set_transition_duration(150)
         self.MainRevealer.set_transition_type(1)
@@ -1352,6 +1353,7 @@ class HistoryRow(Adw.ActionRow):
 
     def Dispose(self, *args):
         self.MainRevealer.set_reveal_child(False)
+        sleep(0.16)
         self.RemoveButton.set_sensitive(False)
         if self.status == "Failed" or self.status == "Canceled":
             self.RetryButton.unparent()
