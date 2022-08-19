@@ -140,9 +140,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 f.close()
         self.MainBuffer.connect("inserted_text", self.islistq, self, True)
         self.MainBuffer.connect("deleted_text", self.islistq, self, True)
-        self.AppData_Initialization()
-        self.UpdateDownloads()
-        self.UpdateHistory()
+        Thread(target = self.AppData_Initialization, daemon = True).start()
+        Thread(target = self.UpdateDownloads, daemon = True).start()
+        Thread(target = self.UpdateHistory, daemon = True).start()
         
         print("All New Downloads Will Be Exported At : " + DefaultLocPATH)
         print("New Video Files Will Be Exported As : " + DefaultVContainer)
