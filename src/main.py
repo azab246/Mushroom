@@ -1006,11 +1006,11 @@ class DownloadsRow(Adw.ActionRow):
     # TODO: Make Da History
 
     def Download_Handler(self, *args): # <------- Need Some Final Touches
-        try:
+        #try:
             if os.path.isfile(data_dir + '/ffmpeg'):
-                self.Name = sub('[^0-9a-zA-Z]+', '_', self.Name)
+                self.Name = escape(sub('[^0-9a-zA-Z]+', '_', self.Name))
                 yt = YouTube(self.URL)
-                NIR = f'{self.Name}_{self.ID}_{self.Res}'
+                NIR = escape(f'{self.Name}_{self.ID}_{self.Res}')
                 if self.Type == "Video":
                     stream = yt.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4', res= self.Res).first()
                     sa = yt.streams.filter(only_audio = True, file_extension = "mp4").last().filesize
@@ -1085,10 +1085,10 @@ class DownloadsRow(Adw.ActionRow):
                         self.cmd = f'{ffmpegexec} -i {self.Fname} -ab {self.Res[0:-3]} -f {self.ext} {self.Fname[0 : -4]}{self.ext} -y'
                         #########################################################################################
                         print(f"#{self.ID}: Running ffmpeg...")
+                        self.ffmpegRun = True
                         win.ffmpeg_Q_Handler(self.ID, "i")
                         while self.ffmpegRun == True:
                             sleep(1)
-                        #self.ffmpegRun = True
                         #self.ffmpegProcess = subprocess.Popen(self.cmd, shell = True)
                         #self.ffmpegProcess.wait()
                         #self.ffmpegRun = False
@@ -1116,10 +1116,10 @@ class DownloadsRow(Adw.ActionRow):
                 sleep(5)
                 Thread(target = self.Download_Handler, daemon = True).start()
                 return
-        except Exception as e:
-            print(e)
-            self.ProgressLabel.set_label("Failed")
-            self.Fail()
+        #except Exception as e:
+        #    print(e)
+        #    self.ProgressLabel.set_label("Failed")
+        #    self.Fail()
             #handle moving to history and call cancel function
         # changing states
 
@@ -1270,22 +1270,22 @@ class DownloadsRow(Adw.ActionRow):
         # then Update History
         win.AddToHistoryDB(self.ID, status)
         win.UpdateHistory(win)
+        if win.ffmpeg_queue:
+            if str(self.ID) == win.ffmpeg_queue[0]:
+                self.killffmpeg()
+                win.ffmpeg_queue.remove(str(self.ID))
+            else:
+                for i in win.ffmpeg_queue:
+                    if i == str(self.ID):
+                        win.ffmpeg_queue.remove(i)
+            while self.ffmpegRun == True:
+                sleep(0.1)
+            self.ffmpegRun = False
+        win.Download_Rows.pop(str(self.ID))
+        Thread(target = self.Dispose, daemon = True).start()
         if len(list(win.Download_Rows.keys())) == 0:
             win.Nothing_D_Revealer.set_reveal_child(True)
             win.TaskManagerPage.set_needs_attention(False)
-            if win.ffmpeg_queue:
-                if str(self.ID) == win.ffmpeg_queue[0]:
-                    self.killffmpeg()
-                    win.ffmpeg_queue.remove(str(self.ID))
-                else:
-                    for i in win.ffmpeg_queue:
-                        if i == str(self.ID):
-                            win.ffmpeg_queue.remove(i)
-                while self.ffmpegRun == True:
-                    sleep(0.1)
-                self.ffmpegRun = False
-                win.Download_Rows.pop(str(self.ID))
-        Thread(target = self.Dispose, daemon = True).start()
         return
 
     def killffmpeg(self):
