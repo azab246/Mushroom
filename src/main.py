@@ -86,6 +86,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
     Nothing_D_Revealer = Gtk.Template.Child()
     ClearHistory_Revealer = Gtk.Template.Child()
     ClearHistory_Button = Gtk.Template.Child()
+    ffmpeg_queue = []
     Download_Rows = {}
     History_Rows = {}
 
@@ -229,9 +230,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
         fsize = self.size_format(size)
         dt = d.now().strftime("%d/%m/%Y %H:%M")
         conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-        self.db = conn.cursor()
-        self.db.execute('''CREATE TABLE IF NOT EXISTS Downloads ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [ext] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [VF] BIGINT DEFAULT -1, [AF] BIGINT DEFAULT -1)''')
-        self.db.execute('''INSERT INTO Downloads (url, res, type, location, added_on, size, name, ext) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (url, str(res), dtype, DefaultLocPATH, dt, fsize, name, Ext))
+        db = conn.cursor()
+        db.execute('''CREATE TABLE IF NOT EXISTS Downloads ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [ext] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [VF] BIGINT DEFAULT -1, [AF] BIGINT DEFAULT -1)''')
+        db.execute('''INSERT INTO Downloads (url, res, type, location, added_on, size, name, ext) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (url, str(res), dtype, DefaultLocPATH, dt, fsize, name, Ext))
         conn.commit()
         conn.close()
 
@@ -323,7 +324,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 if f"{stream.resolution}" not in self.ResV:
                     self.VidVidRes.append([f"{stream.resolution}"])
                     self.ResV.append(f"{stream.resolution}")
-                    self.SizesV.append(stream.filesize + self.vid.streams.filter(progressive = False, only_audio = True, file_extension='webm').last().filesize)
+                    self.SizesV.append(stream.filesize + self.vid.streams.filter(progressive = False, only_audio = True, file_extension='mp4').last().filesize)
             for stream in self.vid.streams.filter(type = "audio", file_extension='webm'):
                 if f"{stream.abr}" not in self.ResA:
                     self.VidAuidRes.append([f"{stream.abr}"])
@@ -560,7 +561,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         button.set_sensitive(True)
 
 
-    def On_List_DownloadFunc(self, button, *args): # <----------- Waiting For Test
+    def On_List_DownloadFunc(self, button, *args):
         button.set_sensitive(False)
         try:
             # Some Checks
@@ -598,7 +599,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                             ListRes = self.LResV[self.ListResBox.get_active()]  
                         else:
                             ListRes = list(rows[i].RListV.keys())[rows[i].CellRBox.get_active()]
-                        Size = video.streams.filter(progressive = False, only_video = True, type = "video", res = ListRes, file_extension='mp4').first().filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='webm').last().filesize
+                        Size = video.streams.filter(progressive = False, only_video = True, type = "video", res = ListRes, file_extension='mp4').first().filesize + video.streams.filter(progressive = False, only_audio = True, file_extension='mp4').last().filesize
                     else:
                         if self.ListGlobalSwitch.get_state() == True:
                             ListRes = self.LResA[self.ListResBox.get_active()]
@@ -614,6 +615,25 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 self.loading = 0
                 self.Fail(err)
         button.set_sensitive(True)
+
+
+    def ffmpeg_Q_Handler(self, ID, mode):
+        if mode == "i":
+            self.ffmpeg_queue.append(str(ID))
+            self.Download_Rows[str(ID)].PauseButton.set_sensitive(False)
+            if len(self.ffmpeg_queue) == 1:
+                Thread(target = self.ffmpeg_cmd_handler, daemon = True).start()
+        return
+
+    def ffmpeg_cmd_handler(self):
+        while len(self.ffmpeg_queue) > 0:
+            print("running ffmpeg for #" + str(self.Download_Rows[self.ffmpeg_queue[0]].ID))
+            self.Download_Rows[self.ffmpeg_queue[0]].PauseButton.set_sensitive(True)
+            self.Download_Rows[self.ffmpeg_queue[0]].ffmpegProcess = subprocess.Popen(self.Download_Rows[self.ffmpeg_queue[0]].cmd, shell = True)
+            self.Download_Rows[self.ffmpeg_queue[0]].ffmpegProcess.wait()
+            self.Download_Rows[self.ffmpeg_queue[0]].ffmpegRun = False
+            del self.ffmpeg_queue[0]
+        return
 
     @Gtk.Template.Callback()
     def Submit_Func(self, button):
@@ -699,7 +719,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.ListTypeList.clear()
             self.ListResBox.clear()
             self.ListTypeBox.clear()
-            
+            self.ListGlobalSwitch.set_active(False)
+            self.GlobalRevealer.set_reveal_child(False)
             for i in range(len(rows)):
                 try:
                     rows[i].destroy_row(self.Playlist_Content_Group)
@@ -902,6 +923,7 @@ class DownloadsRow(Adw.ActionRow):
         self.MainBox.set_margin_end(20)
         self.MainBox.set_margin_top(20)
         self.ffmpegRun = False
+        self.ffmpegProcess = 0
         # setting MainIcon Defaults
         if DType == "Video":
             self.MainIcon = Gtk.Image.new_from_icon_name("emblem-videos-symbolic")
@@ -980,7 +1002,7 @@ class DownloadsRow(Adw.ActionRow):
         Thread(target = self.Download_Handler, daemon = True).start()
 
     # TODO: Finalize The Controlling Buttons Stuff And Add Some UI Tweaks
-    # TODO: Make Da qieuing Stuff For Both Of FFMPEG and Downloading Processes
+    # TODO: Make Da queueing Stuff For Both Of FFMPEG and Downloading Processes
     # TODO: Make Da History
 
     def Download_Handler(self, *args): # <------- Need Some Final Touches
@@ -991,7 +1013,7 @@ class DownloadsRow(Adw.ActionRow):
                 NIR = f'{self.Name}_{self.ID}_{self.Res}'
                 if self.Type == "Video":
                     stream = yt.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4', res= self.Res).first()
-                    sa = yt.streams.filter(only_audio = True, file_extension = "webm").last().filesize
+                    sa = yt.streams.filter(only_audio = True, file_extension = "mp4").last().filesize
                     size = stream.filesize + sa
                     CHUNK = 1024*500
                     self.downloaded = self.AFP + self.VFP
@@ -1002,7 +1024,7 @@ class DownloadsRow(Adw.ActionRow):
                             os.remove(f'{DownloadCacheDir}{NIR}_VF.download')
                         self.ProgressLabel.set_label("Canceled")
                     else:
-                        stream = yt.streams.filter(only_audio = True, file_extension = "webm").last()
+                        stream = yt.streams.filter(only_audio = True, file_extension = "mp4").last()
                         if self.AFP+1 < stream.filesize:
                             self.chunk_handler(size, CHUNK, False, stream.url, f'{DownloadCacheDir}{NIR}_AF.download', stream.filesize, "AF")
                         if self.is_cancelled:
@@ -1012,19 +1034,22 @@ class DownloadsRow(Adw.ActionRow):
                         else:
                             self.ProgressLabel.set_label("Almost Done")
                             Thread(target = self.Progressbar_pulse_handler, daemon = True).start()
-                            AFname = f"{DownloadCacheDir}{NIR}_AF.webm"
+                            AFname = f"{DownloadCacheDir}{NIR}_AF.mp4"
                             VFname = f"{DownloadCacheDir}{NIR}_VF.mp4"
                             if os.path.isfile(f"{DownloadCacheDir}{NIR}_AF.download") and os.path.isfile(f"{DownloadCacheDir}{NIR}_VF.download"):
                                 os.rename(f"{DownloadCacheDir}{NIR}_AF.download", AFname)
                                 os.rename(f"{DownloadCacheDir}{NIR}_VF.download", VFname)
                             self.Fname = f"{DownloadCacheDir}{NIR}.{self.ext}"
-                            cmd = f'{ffmpegexec} -i {VFname} -i {AFname} -c:v copy -c:a aac {self.Fname} -y'
+                            self.cmd = f'{ffmpegexec} -i {VFname} -i {AFname} -c:v copy -c:a aac {self.Fname} -y'
                             ####################################################################
-                            print(f"#{self.ID}: Running ffmpeg...")
+                            print(f"#{self.ID}: Adding To ffmpeg Queue...")
                             self.ffmpegRun = True
-                            self.ffmpegProcess = subprocess.Popen(cmd, shell = True)
-                            self.ffmpegProcess.wait()
-                            self.ffmpegRun = False
+                            win.ffmpeg_Q_Handler(self.ID, "i")
+                            while self.ffmpegRun == True:
+                                sleep(1)
+                            #self.ffmpegProcess = subprocess.Popen(self.cmd, shell = True)
+                            #self.ffmpegProcess.wait()
+                            #self.ffmpegRun = False
                             #######################################
                             if self.fkilled:
                                 return
@@ -1057,13 +1082,16 @@ class DownloadsRow(Adw.ActionRow):
                         self.Fname = f'{DownloadCacheDir}{NIR}.webm'
                         if os.path.isfile(f'{DownloadCacheDir}{NIR}.download'):
                             os.rename(f'{DownloadCacheDir}{NIR}.download', self.Fname)
-                        cmd = f'{ffmpegexec} -i {self.Fname} -ab {self.Res[0:-3]} -f {self.ext} {self.Fname[0 : -4]}{self.ext} -y'
+                        self.cmd = f'{ffmpegexec} -i {self.Fname} -ab {self.Res[0:-3]} -f {self.ext} {self.Fname[0 : -4]}{self.ext} -y'
                         #########################################################################################
                         print(f"#{self.ID}: Running ffmpeg...")
-                        self.ffmpegRun = True
-                        self.ffmpegProcess = subprocess.Popen(cmd, shell = True)
-                        self.ffmpegProcess.wait()
-                        self.ffmpegRun = False
+                        win.ffmpeg_Q_Handler(self.ID, "i")
+                        while self.ffmpegRun == True:
+                            sleep(1)
+                        #self.ffmpegRun = True
+                        #self.ffmpegProcess = subprocess.Popen(self.cmd, shell = True)
+                        #self.ffmpegProcess.wait()
+                        #self.ffmpegRun = False
                         ##########################################################
                         if self.fkilled:
                             return
@@ -1111,7 +1139,7 @@ class DownloadsRow(Adw.ActionRow):
             self.ProgressLabel.set_label(f"%0.00")
             self.ProgressBar.set_fraction(0)
         conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-        self.db = conn.cursor()
+        db = conn.cursor()
         if ftype == "VF":
             self.downloadedOF = self.VFP
         else:
@@ -1133,7 +1161,7 @@ class DownloadsRow(Adw.ActionRow):
                     f.write(chunk)
                     self.downloaded += len(chunk)
                     self.downloadedOF += len(chunk)
-                    self.db.execute(f'''UPDATE Downloads SET {ftype} = {self.downloadedOF} WHERE id = {self.ID}''')
+                    db.execute(f'''UPDATE Downloads SET {ftype} = {self.downloadedOF} WHERE id = {self.ID}''')
                     conn.commit()
                     self.ProgressLabel.set_label(f"%{(self.downloaded / (size))*100:.2f}")
                     self.ProgressBar.set_fraction(self.downloaded / (size))
@@ -1163,14 +1191,16 @@ class DownloadsRow(Adw.ActionRow):
             button.set_css_classes(["Download-Button"])
             self.is_paused = True
             if self.ffmpegRun:
-                self.ffmpegProcess.send_signal(subprocess.signal.SIGSTOP)
+                if win.ffmpeg_queue[0] == str(self.ID):
+                    self.ffmpegProcess.send_signal(subprocess.signal.SIGSTOP)
             print(f"Task #{self.ID}: {self.Name} --Paused")
         else:
             button.set_icon_name("media-playback-pause-symbolic")
             button.set_css_classes(["Pause-Button"])
             self.is_paused = False
             if self.ffmpegRun:
-                self.ffmpegProcess.send_signal(subprocess.signal.SIGCONT)
+                if win.ffmpeg_queue[0] == str(self.ID):
+                    self.ffmpegProcess.send_signal(subprocess.signal.SIGCONT)
             print(f"Task #{self.ID}: {self.Name} --Resumed")
         return
 
@@ -1240,18 +1270,29 @@ class DownloadsRow(Adw.ActionRow):
         # then Update History
         win.AddToHistoryDB(self.ID, status)
         win.UpdateHistory(win)
-        win.Download_Rows.pop(str(self.ID))
         if len(list(win.Download_Rows.keys())) == 0:
             win.Nothing_D_Revealer.set_reveal_child(True)
             win.TaskManagerPage.set_needs_attention(False)
-        self.killffmpeg()
+            if win.ffmpeg_queue:
+                if str(self.ID) == win.ffmpeg_queue[0]:
+                    self.killffmpeg()
+                    win.ffmpeg_queue.remove(str(self.ID))
+                else:
+                    for i in win.ffmpeg_queue:
+                        if i == str(self.ID):
+                            win.ffmpeg_queue.remove(i)
+                while self.ffmpegRun == True:
+                    sleep(0.1)
+                self.ffmpegRun = False
+                win.Download_Rows.pop(str(self.ID))
         Thread(target = self.Dispose, daemon = True).start()
         return
 
     def killffmpeg(self):
         if self.ffmpegRun:
-            self.fkilled = True
-            self.ffmpegProcess.kill()
+            if str(self.ID) == win.ffmpeg_queue[0]:
+                self.fkilled = True
+                self.ffmpegProcess.kill()
 
 
 class HistoryRow(Adw.ActionRow):
@@ -1383,8 +1424,8 @@ class HistoryRow(Adw.ActionRow):
 
     def DB_remove(self, *args):
         conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-        self.db = conn.cursor()
-        self.db.execute(f'''DELETE FROM History WHERE id = {self.id}''')
+        db = conn.cursor()
+        db.execute(f'''DELETE FROM History WHERE id = {self.id}''')
         conn.commit()
         conn.close()
         win.History_Rows.pop(self.id)
@@ -1397,7 +1438,7 @@ class HistoryRow(Adw.ActionRow):
 
     def Remove(self, *args):
         Thread(target = self.Dispose, daemon = True).start()
-        Thread(target = self.DB_remove, daemon = True).start()
+        Thread(target = self.db_remove, daemon = True).start()
         return
 
     def OpenLoc(self, *args):
