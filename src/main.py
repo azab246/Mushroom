@@ -1438,7 +1438,7 @@ class HistoryRow(Adw.ActionRow):
 
     def Remove(self, *args):
         Thread(target = self.Dispose, daemon = True).start()
-        Thread(target = self.db_remove, daemon = True).start()
+        Thread(target = self.DB_remove, daemon = True).start()
         return
 
     def OpenLoc(self, *args):
