@@ -31,7 +31,7 @@ This App Is Made By A __Complete Noob__ With Only 2 Months Of Experience On CS a
 
  __And Even Though The App is Working btw__, The Code Might be just A Complete Peice Of Trash In Some Perspectives,
  
-Some Might See It as an Inefficient Masterpiece and _bc of my lackage of experience_ It Might Even Have Securety Flaws,
+Some Might See It as an Inefficient Masterpiece and _bc of my lack of experience_ It Might Even Have Security Flaws,
 
 I Can Clearly Agree About That The Code Needs An Intense Cleaning _Even In My POV_, And I Can't Guarantee That I'll Even Maintain It  
 <br>
