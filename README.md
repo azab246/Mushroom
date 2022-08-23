@@ -20,14 +20,14 @@ an Elegant Youtube Video Downloader Based On [Pytube](https://github.com/pytube/
 ## Notes
 A FFMPEG Static Build File Will Be Downloaded At The First App Launch
 
-The App Uses FFMPEG To Handle YouTube Progressive Streams Which Is The Method That The App Uses For All Video Downloads
+The App Uses [FFMPEG](https://ffmpeg.org/) To Handle YouTube Progressive Streams Which Is The Method That The App Uses For All Video Downloads
 
 <br><br>
 
 
 ## Disclaimer
 
-This App Is Made By A __Complete Noob__ With Only 2 Months Of Experience On CS and Hasn't Worked on any Similar Projects Before,
+This App Is Made By A __Complete Noob__ With Only 2 Months Of Experience On CS and Hasn't Worked on any Similar Projects Before, While This Project Is Made Mainly As a [CS50x](https://cs50.harvard.edu/x/2022/) Final Project
 
  __And Even Though The App is Working btw__, The Code Might be just A Complete Peice Of Trash In Some Perspectives,
  
