@@ -27,9 +27,9 @@ The App Uses FFMPEG To Handle YouTube Progressive Streams Which Is The Method Th
 
 ## Disclaimer
 
-This App Is Made By A __Complete Noob__ With Only 2 Months Of Experience On CS and Hasn't Worked on any Similar Projects Before, __And Even Though The App is Working btw__, The Code Might be just A Complete Peice Of Trash In Some Perspectives, Some Might See It as an Inefficient Masterpiece and Might Even Have Securety Flaws _bc of my lackage of experience_, So You Are Using This At __Your Own Responsability__ 
+This App Is Made By A __Complete Noob__ With Only 2 Months Of Experience On CS and Hasn't Worked on any Similar Projects Before, __And Even Though The App is Working btw__, The Code Might be just A Complete Peice Of Trash In Some Perspectives, Some Might See It as an Inefficient Masterpiece and _bc of my lackage of experience_ It Might Even Have Securety Flaws, And I Can Clearly Agree About That The Code Needs An Intense Cleaning _Even In My POV_, So You Are Using This At __Your Own Responsability__ 
 
-but its still working good btw :>
+but its still working effectively btw :>
 
 <br><br>
 ## Still Under Development
