@@ -20,7 +20,7 @@ an Elegant Youtube Video Downloader Based On [Pytube](https://github.com/pytube/
 ## Notes
 A FFMPEG Static Build File Will Be Downloaded At The First App Launch
 
-The App Uses [FFMPEG](https://ffmpeg.org/) To Handle YouTube Progressive Streams Which Is The Method That The App Uses For All Video Downloads
+The App Uses [FFMPEG](https://ffmpeg.org/) To Handle YouTube DASH Streams Which Is The Method That The App Uses For All Video Downloads
 
 <br><br>
 
