@@ -53,6 +53,40 @@
             </child>
           </object>
         </child>
+        <child type="end">
+          <object class="GtkRevealer" id="GlobalButtons_Revealer">
+            <property name="transition-duration">200</property>
+            <property name="transition-type">1</property>
+            <property name="reveal-child">false</property>
+            <child>
+              <object class="GtkBox">
+                <child>
+                  <object class="GtkButton" id="GlobalPause_Button">
+                    <property name="icon-name">media-playback-pause-symbolic</property>
+                    <property name="tooltip-text">Pause All Downloads</property>
+                    <property name="sensitive">False</property>
+
+                    <signal name="clicked" handler="GlobalPause"/>
+                    <style>
+                      <class name="Pause-Global"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="GlobalStop_Button">
+                    <property name="icon-name">media-playback-stop-symbolic</property>
+                    <property name="tooltip-text">Cancel All Downloads</property>
+                    <property name="sensitive">False</property>
+                    <signal name="clicked" handler="GlobalStop"/>
+                    <style>
+                      <class name="Clear-Button"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>
@@ -487,7 +521,7 @@
                                     <property name="halign">center</property>
                                     <child>
                                       <object class="GtkButton" id="Fail_Button">
-                                        <property name="label">Go Back</property>
+                                        <property name="label">Try Again</property>
                                         <signal name="clicked" handler="On_Go_Back"/>
                                         <style>
                                           <class name="Cancel-Button"/>

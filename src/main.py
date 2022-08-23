@@ -86,12 +86,16 @@ class MushroomWindow(Gtk.ApplicationWindow):
     Nothing_D_Revealer = Gtk.Template.Child()
     ClearHistory_Revealer = Gtk.Template.Child()
     ClearHistory_Button = Gtk.Template.Child()
+    GlobalPause_Button = Gtk.Template.Child()
+    GlobalStop_Button = Gtk.Template.Child()
+    GlobalButtons_Revealer = Gtk.Template.Child()
     ffmpeg_queue = []
     Download_Rows = {}
     History_Rows = {}
-
+    RequestID = 0
     VidRequest = 0
     ListRequest = 0
+    startup_connFail = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -106,8 +110,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
         global DownloadCacheDir
         global ffmpeg
         global ffmpegexec
-        VCOPT = {'mp4' : 0, 'mkv' : 1, 'webm' : 2, 'mov' : 3, 'flv' : 4}
-        ACOPT = {'mp3' : 0, 'aac' : 1, 'ogg' : 2, 'wav' : 3, 'flac' : 4}
+        Thread(target = self.connection_test, daemon = True).start()
+        VCOPT = {'mp4' : 0, 'mkv' : 1, 'avi' : 2, 'mov' : 3, 'flv' : 4}
+        ACOPT = {'mp3' : 0, 'dsd' : 1, 'ogg' : 2, 'wav' : 3, 'flac' : 4}
         self.isactivetoast = False
         cache_dir = GLib.get_user_cache_dir()
         data_dir = GLib.get_user_data_dir()
@@ -145,9 +150,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
         self.MainBuffer.connect("inserted_text", self.islistq, self, True)
         self.MainBuffer.connect("deleted_text", self.islistq, self, True)
         Thread(target = self.AppData_Initialization, daemon = True).start()
-        Thread(target = self.UpdateDownloads, daemon = True).start()
+        if self.connect_func():
+            self.UpdateDownloads()
+        else: self.startup_connFail = True
         Thread(target = self.UpdateHistory, daemon = True).start()
-        
         print("All New Downloads Will Be Exported At : " + DefaultLocPATH)
         print("New Video Files Will Be Exported As : " + DefaultVContainer)
         print("New Audio Files Will Be Exported As : " + DefaultAContainer)
@@ -160,42 +166,43 @@ class MushroomWindow(Gtk.ApplicationWindow):
             os.mkdir(cache_dir + '/DownloadsCache')
 
         # FFMPEG arch check and Download on /data
-        if not os.path.isfile(ffmpeg):
-            NoneToast = Adw.Toast.new("Downloading ffmpeg ~41MB, You Will Be Able To Use The App oOnce We Finish This")
-            self.MainEntry.set_sensitive(False)
-            NoneToast.set_timeout(5)
-            self.MainToastOverlay.add_toast(NoneToast)
-            print("Cant Find ffmpeg, Trying To Download it from https://johnvansickle.com/ffmpeg/builds/")
-            co = subprocess.check_output('uname -m', shell=True).decode('utf-8')
-            if "x86_64" in co :
-                print('x86_64 arch found')
-                URL = "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz"
-            elif 'i686' in co :
-                print('i686 arch found')
-                URL = "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-i686-static.tar.xz"
-            elif 'aarch64' in co :
-                print('aarch64 arch found')
-                URL = "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-arm64-static.tar.xz"
-            else:
-                print('Unsupported arch')
-                self.Fail_Button.set_visible(False)
-                self.Fail_Button.set_sensitive(False)
-                self.Fail("Sorry, Your Device is not Supported for ffmpeg, only x86_64, i686, aarch64 are supported")
-                print("Your CPU arch is not Supported for ffmpeg, only x86_64, i686, aarch64 are supported")
-                return
-            print("Downloading ffmpeg ~41MB, This Should be Done At The First Time of Running The App")
-            DRequest.urlretrieve(URL, f"{data_dir}/ffmpeg.download")
-            os.rename(f"{data_dir}/ffmpeg.download", f"{data_dir}/ffmpeg.tar.xz")  
-            downloaded = openTAR(f"{data_dir}/ffmpeg.tar.xz")
-            downloaded.extractall(f"{data_dir}/ffmpegdir")
-            co = subprocess.check_output(f'ls {data_dir}/ffmpegdir/', shell=True).decode('utf-8')
-            os.remove(f"{data_dir}/ffmpeg.tar.xz")
-            os.rename(f"{data_dir}/ffmpegdir/{co[0:-1]}/ffmpeg", f'{data_dir}/ffmpeg')
-            rmtree(f"{data_dir}/ffmpegdir")
-            NoneToast = Adw.Toast.new("ffmpeg Downloaded Successfully!")
-            self.MainEntry.set_sensitive(True)
-            NoneToast.set_timeout(5)
-            self.MainToastOverlay.add_toast(NoneToast)
+        if self.connect_func():
+            if not os.path.isfile(ffmpeg):
+                NoneToast = Adw.Toast.new("Downloading ffmpeg ~41MB, You Will Be Able To Use The App oOnce We Finish This")
+                self.MainEntry.set_sensitive(False)
+                NoneToast.set_timeout(5)
+                self.MainToastOverlay.add_toast(NoneToast)
+                print("Cant Find ffmpeg, Trying To Download it from https://johnvansickle.com/ffmpeg/builds/")
+                co = subprocess.check_output('uname -m', shell=True).decode('utf-8')
+                if "x86_64" in co :
+                    print('x86_64 arch found')
+                    URL = "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz"
+                elif 'i686' in co :
+                    print('i686 arch found')
+                    URL = "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-i686-static.tar.xz"
+                elif 'aarch64' in co :
+                    print('aarch64 arch found')
+                    URL = "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-arm64-static.tar.xz"
+                else:
+                    print('Unsupported arch')
+                    self.Fail_Button.set_visible(False)
+                    self.Fail_Button.set_sensitive(False)
+                    self.Fail("Sorry, Your Device is not Supported for ffmpeg, only x86_64, i686, aarch64 are supported")
+                    print("Your CPU arch is not Supported for ffmpeg, only x86_64, i686, aarch64 are supported")
+                    return
+                print("Downloading ffmpeg ~41MB, This Should be Done At The First Time of Running The App")
+                DRequest.urlretrieve(URL, f"{data_dir}/ffmpeg.download")
+                os.rename(f"{data_dir}/ffmpeg.download", f"{data_dir}/ffmpeg.tar.xz")  
+                downloaded = openTAR(f"{data_dir}/ffmpeg.tar.xz")
+                downloaded.extractall(f"{data_dir}/ffmpegdir")
+                co = subprocess.check_output(f'ls {data_dir}/ffmpegdir/', shell=True).decode('utf-8')
+                os.remove(f"{data_dir}/ffmpeg.tar.xz")
+                os.rename(f"{data_dir}/ffmpegdir/{co[0:-1]}/ffmpeg", f'{data_dir}/ffmpeg')
+                rmtree(f"{data_dir}/ffmpegdir")
+                NoneToast = Adw.Toast.new("ffmpeg Downloaded Successfully!")
+                self.MainEntry.set_sensitive(True)
+                NoneToast.set_timeout(5)
+                self.MainToastOverlay.add_toast(NoneToast)
         return
 
 
@@ -274,32 +281,36 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     os.remove(file.path)
                 self.Nothing_D_Revealer.set_reveal_child(True)
                 self.TaskManagerPage.set_needs_attention(False)
+                self.GlobalPause_Button.set_sensitive(False)
+                self.GlobalStop_Button.set_sensitive(False)
             else:
+                self.GlobalPause_Button.set_sensitive(True)
+                self.GlobalStop_Button.set_sensitive(True)
                 self.TaskManagerPage.set_needs_attention(True)
                 self.Nothing_D_Revealer.set_reveal_child(False)
             conn.close()
 
     
     def UpdateHistory(self, *args):
-        if os.path.isfile(ffmpeg):
-            conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-            db = conn.cursor()
-            queue = db.execute("SELECT * FROM History")
-            for video in queue:
-                if video[5] not in list(self.History_Rows.keys()):
-                    print("Adding To History List : " + video[4] + f"  ( {video[1]} )")
-                    self.History_Rows[video[5]] = HistoryRow(video[5], video[0], video[1], video[2], video[3], video[4], video[6], video[7], video[8], video[9])
-                    self.History_List.prepend(self.History_Rows[video[5]])
-            if len(list(self.History_Rows.keys())) == 0:
-                self.ClearHistory_Button.set_sensitive(False)
-                self.Nothing_H_Revealer.set_reveal_child(True)
-            else:
-                self.ClearHistory_Button.set_sensitive(True)
+        conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
+        db = conn.cursor()
+        queue = db.execute("SELECT * FROM History")
+        for video in queue:
+            if video[5] not in list(self.History_Rows.keys()):
+                print("Adding To History List : " + video[4] + f"  ( {video[1]} )")
+                self.History_Rows[video[5]] = HistoryRow(video[5], video[0], video[1], video[2], video[3], video[4], video[6], video[7], video[8], video[9])
+                self.History_List.prepend(self.History_Rows[video[5]])
                 self.Nothing_H_Revealer.set_reveal_child(False)
+                self.ClearHistory_Button.set_sensitive(True)
+        if len(list(self.History_Rows.keys())) == 0:
+            self.ClearHistory_Button.set_sensitive(False)
+            self.Nothing_H_Revealer.set_reveal_child(True)            
         return
 
 
     def Video_Data(self, *args):
+        self.RequestID += 1
+        RequestID = self.RequestID
         if self.connect_func() == False:
                 return
         try:
@@ -311,6 +322,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             # setting lables
             self.link = self.MainBuffer.get_text()
             self.vid = YouTube(self.link)
+            if self.MainLeaflet.get_visible_child() != self.LoadingPage or RequestID != self.RequestID: return
             self.VidDetails.set_title(escape(self.vid.title))
             self.VidName = self.vid.title
             self.VidDetails.set_description(f"Channel: {escape(self.vid.author)}  Length: " + f"{self.time_format(self.vid.length)}" + "   Views: " + f"{self.vid.views:,}")
@@ -321,11 +333,13 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.ResA = []
             print('Getting Data...')
             for stream in self.vid.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
+                if self.MainLeaflet.get_visible_child() != self.LoadingPage or RequestID != self.RequestID: return
                 if f"{stream.resolution}" not in self.ResV:
                     self.VidVidRes.append([f"{stream.resolution}"])
                     self.ResV.append(f"{stream.resolution}")
                     self.SizesV.append(stream.filesize + self.vid.streams.filter(progressive = False, only_audio = True, file_extension='mp4').last().filesize)
             for stream in self.vid.streams.filter(type = "audio", file_extension='webm'):
+                if self.MainLeaflet.get_visible_child() != self.LoadingPage or RequestID != self.RequestID: return
                 if f"{stream.abr}" not in self.ResA:
                     self.VidAuidRes.append([f"{stream.abr}"])
                     self.ResA.append(f"{stream.abr}")
@@ -360,9 +374,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 return
 
 
-
     def Playlist_Data(self, *args):
-        global rows
+        self.RequestID += 1
+        RequestID = self.RequestID
+        global rows        
         if self.connect_func() == False:
             return
         try:
@@ -375,6 +390,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.link = self.MainBuffer.get_text()
             self.plist = Playlist(self.link)
             videos = self.plist.videos
+            if self.MainLeaflet.get_visible_child() != self.LoadingPage or RequestID != self.RequestID: return
             self.l = len(videos)
             rows = [0]*self.l
             self.LResV = []
@@ -395,11 +411,13 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 for stream in video.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4'):
                     if stream.resolution not in list(vl.keys()):
                         vl[stream.resolution] = 0
+                if self.MainLeaflet.get_visible_child() != self.LoadingPage or RequestID != self.RequestID: return
                 self.ListResV[i] = vl
                 print(f"Avilable Video Resolutions: {list(self.ListResV[i].keys())}")
                 for stream in video.streams.filter(type = "audio", file_extension='webm'):
                     if stream.abr not in list(al.keys()):
                         al[stream.abr] = 0
+                if self.MainLeaflet.get_visible_child() != self.LoadingPage or RequestID != self.RequestID: return
                 self.ListResA[i] = al
                 print(f"Avilable Audio Bitrates: {list(self.ListResA[i].keys())}")
                 print("----------------------------------")
@@ -458,6 +476,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     
     def loading_func(self, Target):
+        RequestID = self.RequestID + 1
+
         self.MainLeaflet.set_visible_child(self.LoadingPage)
 
         self.loading = 1
@@ -465,9 +485,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
         while self.loading == 1:
             self.LoadingProgressBar.pulse()
             sleep(0.25)
-
-        self.MainLeaflet.set_visible_child(Target)
-
+        if RequestID == self.RequestID:
+            self.MainLeaflet.set_visible_child(Target)
 
 
     def connect_func(self):
@@ -478,8 +497,28 @@ class MushroomWindow(Gtk.ApplicationWindow):
             return True
         except:
             print("Connection Failed")
-            self.Fail("Failed Due To Connection Error")
+            self.Fail("No Connection")
             return False
+
+
+    def connection_test(self):
+        while True:
+            try:
+                host='http://google.com'
+                DRequest.urlopen(host)
+                if self.startup_connFail:
+                    self.startup_connFail = False
+                    self.UpdateDownloads()
+                if self.MainLeaflet.get_visible_child() == self.FailPage:
+                    self.MainLeaflet.set_visible_child(self.MainPage)
+                sleep(3)
+            except:
+                if self.MainLeaflet.get_visible_child() != self.FailPage:
+                    print("Connection Failed")
+                    self.Fail("No Connection")
+                if self.GlobalPause_Button.get_sensitive():
+                    self.GlobalPause(self.GlobalPause_Button)
+                sleep(3)
 
 
 
@@ -518,12 +557,13 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
 
 
-
     def Fail(self, errno):
         if 'Errno -3' in str(errno):
             self.Error_Label.set_label("Error: Conection Error")
         else:
             self.Error_Label.set_label("Error: "+ str(errno))
+        self.RequestID += 1
+        self.loading = 0
         self.SubmitButton.set_sensitive(False)
         self.SuggestionCheck.set_active(False)
         self.MainLeaflet.set_visible_child(self.FailPage)
@@ -607,8 +647,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
                             ListRes = list(rows[i].RListA.keys())[rows[i].CellRBox.get_active()]
                         Size = video.streams.filter(type = "audio", abr = ListRes , file_extension = "webm").first().filesize
                     self.AddToTasksDB(rows[i].URL, ListRes, ListType, Size, rows[i].Title)
+                    self.UpdateDownloads()
                 i += 1
-            self.UpdateDownloads()
             self.loading = 0
         except Exception as err:
             if err:
@@ -621,6 +661,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         if mode == "i":
             self.ffmpeg_queue.append(str(ID))
             self.Download_Rows[str(ID)].PauseButton.set_sensitive(False)
+            self.Download_Rows[str(ID)].ProgressLabel.set_label("    Waiting In Queue")
             if len(self.ffmpeg_queue) == 1:
                 Thread(target = self.ffmpeg_cmd_handler, daemon = True).start()
         return
@@ -629,6 +670,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         while len(self.ffmpeg_queue) > 0:
             print("running ffmpeg for #" + str(self.Download_Rows[self.ffmpeg_queue[0]].ID))
             self.Download_Rows[self.ffmpeg_queue[0]].PauseButton.set_sensitive(True)
+            self.Download_Rows[self.ffmpeg_queue[0]].ProgressLabel.set_label("   Running FFMPEG")
             self.Download_Rows[self.ffmpeg_queue[0]].ffmpegProcess = subprocess.Popen(self.Download_Rows[self.ffmpeg_queue[0]].cmd, shell = True)
             self.Download_Rows[self.ffmpeg_queue[0]].ffmpegProcess.wait()
             self.Download_Rows[self.ffmpeg_queue[0]].ffmpegRun = False
@@ -704,6 +746,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def On_Go_Back(self, button):
         button.set_sensitive(False)
+        if not self.connect_func():
+            button.set_sensitive(True)
+            return
         print("Cleaning...")
         if self.VidRequest == 1:
             self.VidVidRes.clear()
@@ -742,8 +787,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
         self.SuggestionCheck.set_active(False)
         self.ListSuggestionRevealer.set_reveal_child(False)
         self.MainLeaflet.set_visible_child(self.MainPage)
-        print("Done")
         button.set_sensitive(True)
+        Thread(target = self.connection_test, daemon = True).start()
 
 
     @Gtk.Template.Callback()
@@ -786,11 +831,13 @@ class MushroomWindow(Gtk.ApplicationWindow):
             button.set_tooltip_text("View Downloads")
             self.H_D_Leaflet.set_visible_child(self.HistoryPage)
             self.ClearHistory_Revealer.set_reveal_child(True)
+            self.GlobalButtons_Revealer.set_reveal_child(False)
         else:
             button.set_icon_name('preferences-system-time-symbolic')
             button.set_tooltip_text("View History")
             self.H_D_Leaflet.set_visible_child(self.DownloadsPage)
             self.ClearHistory_Revealer.set_reveal_child(False)
+            self.GlobalButtons_Revealer.set_reveal_child(True)
 
 
     @Gtk.Template.Callback()
@@ -798,18 +845,39 @@ class MushroomWindow(Gtk.ApplicationWindow):
         button.set_sensitive(False)
         if self.History_Rows:
             for row in self.History_Rows.values():
-                row.Remove()
+                Thread(target = row.Remove, daemon = True).start()
+        self.Nothing_H_Revealer.set_reveal_child(True)
         return
 
     @Gtk.Template.Callback()
     def ShowHDSwitch(self, source, *args):
         if source.get_mapped():
             self.H_D_Revealer.set_reveal_child(True)
+            if self.H_D_Button.get_icon_name() == "preferences-system-time-symbolic":
+                self.GlobalButtons_Revealer.set_reveal_child(True)
             if self.H_D_Button.get_tooltip_text() == 'View Downloads':
                 self.ClearHistory_Revealer.set_reveal_child(True)
         else: 
             self.H_D_Revealer.set_reveal_child(False)
             self.ClearHistory_Revealer.set_reveal_child(False)
+            self.GlobalButtons_Revealer.set_reveal_child(False)            
+            
+
+    @Gtk.Template.Callback()
+    def GlobalPause(self, button, *args):
+        if self.Download_Rows:
+            for row in self.Download_Rows.values():
+                if row.PauseButton.get_sensitive() == True and row.PauseButton.get_icon_name() == 'media-playback-pause-symbolic':
+                    Thread(target = row.Pause, args = [row.PauseButton], daemon = True).start()
+            button.set_sensitive(False)
+
+    
+    @Gtk.Template.Callback()
+    def GlobalStop(self, button, *args):
+        if self.Download_Rows:
+            for row in self.Download_Rows.values():
+                Thread(target = row.Cancel, args = [row.StopButton], daemon = True).start()
+            button.set_sensitive(False)
 
 class ListRow(Adw.ActionRow):
     def __init__(self, url , title, author, lengthf, views, Playlist_Content_Group, ListV, ListA):
@@ -1006,7 +1074,7 @@ class DownloadsRow(Adw.ActionRow):
     # TODO: Make Da History
 
     def Download_Handler(self, *args): # <------- Need Some Final Touches
-        #try:
+        try:
             if os.path.isfile(data_dir + '/ffmpeg'):
                 self.Name = escape(sub('[^0-9a-zA-Z]+', '_', self.Name))
                 yt = YouTube(self.URL)
@@ -1089,9 +1157,6 @@ class DownloadsRow(Adw.ActionRow):
                         win.ffmpeg_Q_Handler(self.ID, "i")
                         while self.ffmpegRun == True:
                             sleep(1)
-                        #self.ffmpegProcess = subprocess.Popen(self.cmd, shell = True)
-                        #self.ffmpegProcess.wait()
-                        #self.ffmpegRun = False
                         ##########################################################
                         if self.fkilled:
                             return
@@ -1113,15 +1178,11 @@ class DownloadsRow(Adw.ActionRow):
                 return
             else:
                 self.ProgressLabel.set_label("  Unable to find ffmpeg")
-                sleep(5)
-                Thread(target = self.Download_Handler, daemon = True).start()
-                return
-        #except Exception as e:
-        #    print(e)
-        #    self.ProgressLabel.set_label("Failed")
-        #    self.Fail()
-            #handle moving to history and call cancel function
-        # changing states
+                self.Fail()
+        except Exception as e:
+            print(e)
+            self.ProgressLabel.set_label("Failed")
+            self.Fail()
 
 
     def Progressbar_pulse_handler(self, *args):
@@ -1174,7 +1235,7 @@ class DownloadsRow(Adw.ActionRow):
                     if int(CHUNK / CHUNKTIME) > 20*1024*1024:
                         CHUNK = 20*1024*1024
                     else:
-                        CHUNK = int((CHUNK / CHUNKTIME)/1) # TODO: change it to the number of S Downloads
+                        CHUNK = int((CHUNK / CHUNKTIME)/len(win.Download_Rows)) # TODO: change it to the number of S Downloads
                     #print(str(CHUNK) + " " + str(CHUNKTIME))
                 else:
                     # no more data
@@ -1194,7 +1255,7 @@ class DownloadsRow(Adw.ActionRow):
                 if win.ffmpeg_queue[0] == str(self.ID):
                     self.ffmpegProcess.send_signal(subprocess.signal.SIGSTOP)
             print(f"Task #{self.ID}: {self.Name} --Paused")
-        else:
+        elif win.connect_func():
             button.set_icon_name("media-playback-pause-symbolic")
             button.set_css_classes(["Pause-Button"])
             self.is_paused = False
@@ -1202,6 +1263,7 @@ class DownloadsRow(Adw.ActionRow):
                 if win.ffmpeg_queue[0] == str(self.ID):
                     self.ffmpegProcess.send_signal(subprocess.signal.SIGCONT)
             print(f"Task #{self.ID}: {self.Name} --Resumed")
+            win.GlobalPause_Button.set_sensitive(True)
         return
 
 
@@ -1273,7 +1335,6 @@ class DownloadsRow(Adw.ActionRow):
         if win.ffmpeg_queue:
             if str(self.ID) == win.ffmpeg_queue[0]:
                 self.killffmpeg()
-                win.ffmpeg_queue.remove(str(self.ID))
             else:
                 for i in win.ffmpeg_queue:
                     if i == str(self.ID):
@@ -1281,11 +1342,13 @@ class DownloadsRow(Adw.ActionRow):
             while self.ffmpegRun == True:
                 sleep(0.1)
             self.ffmpegRun = False
+        self.Dispose()
         win.Download_Rows.pop(str(self.ID))
-        Thread(target = self.Dispose, daemon = True).start()
         if len(list(win.Download_Rows.keys())) == 0:
             win.Nothing_D_Revealer.set_reveal_child(True)
             win.TaskManagerPage.set_needs_attention(False)
+            win.GlobalPause_Button.set_sensitive(False)
+            win.GlobalStop_Button.set_sensitive(False)
         return
 
     def killffmpeg(self):
@@ -1432,9 +1495,6 @@ class HistoryRow(Adw.ActionRow):
         if len(list(win.History_Rows.keys())) == 0:
             win.ClearHistory_Button.set_sensitive(False)
             win.Nothing_H_Revealer.set_reveal_child(True)
-        else:
-            win.ClearHistory_Button.set_sensitive(True)
-            win.Nothing_H_Revealer.set_reveal_child(False)
 
     def Remove(self, *args):
         Thread(target = self.Dispose, daemon = True).start()

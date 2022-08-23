@@ -95,3 +95,14 @@
   background-color: #e6083462;
   transition: background-color 0.25s;
 }
+
+.Pause-Global:hover {
+  color: white;
+  background-color: #e6ab0842;
+}
+
+.Pause-Global:hover:active {
+  color: white;
+  background-color: #e6b20862;
+  transition: background-color 0.25s;
+}
