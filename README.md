@@ -35,8 +35,8 @@ Some Might See It as an Inefficient Masterpiece and _bc of my lackage of experie
 
 I Can Clearly Agree About That The Code Needs An Intense Cleaning _Even In My POV_, And I Can't Guarantee That I'll Even Maintain It  
 <br>
-So Even Though The App Is __Working Effectively__,
-You Are Using It At __Your Own Responsability__ :>
+So While I Can Say That The App Is __Working Effectively__,
+You Are Still Using It At __Your Own Responsability__ :>
 
 <br><br>
 ## Still Under Development
