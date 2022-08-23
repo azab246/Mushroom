@@ -27,17 +27,17 @@ The App Uses [FFMPEG](https://ffmpeg.org/) To Handle YouTube DASH Streams Which 
 
 ## Disclaimer
 
-This App Is Made By A __Complete Noob__ With Only 2 Months Of Experience On CS and Hasn't Worked on any Similar Projects Before, While This Project Is Made Mainly As a [CS50x](https://cs50.harvard.edu/x/2022/) Final Project
-
- __And Even Though The App is Working btw__, The Code Might be just A Complete Peice Of Trash In Some Perspectives,
- 
-Some Might See It as an Inefficient Masterpiece and _bc of my lack of experience_ It Might Even Have Security Flaws,
-
-I Can Clearly Agree About That The Code Needs An Intense Cleaning _Even In My POV_, And I Can't Guarantee That I'll Even Maintain It  
+This App Is Made By A __Complete Noob__ With Only 2 Months Of Experience On CS and Hasn't Worked on any Similar Projects Before, While This Project Is Made Mainly As a [CS50x](https://cs50.harvard.edu/x/2022/) Final Project     
+<br>
+ __So Even Though The App is Working__, The Code Might be just A Complete Peice Of Trash In Some Perspectives,
+Some Might See It as an Inefficiency Masterpiece and _bc of my lack of experience_ It Might Even Have __Security Flaws__,   
+<br>
+btw I Can Clearly Agree About That The Code Needs An __Intense Cleaning__ _Even In My POV_, And I Can't Guarantee That I'll Even Maintain It  
 <br>
 So While I Can Say That The App Is __Working Effectively__,
 You Are Still Using It At __Your Own Responsability__ :>
 
 <br><br>
+
 ## Still Under Development
 
