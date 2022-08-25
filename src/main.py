@@ -32,6 +32,7 @@ from html import escape
 from urllib import request as DRequest
 import os
 import subprocess
+from gc import collect
 from tarfile import open as openTAR
 from shutil import rmtree, move
 
@@ -110,29 +111,37 @@ class MushroomWindow(Gtk.ApplicationWindow):
         global DownloadCacheDir
         global ffmpeg
         global ffmpegexec
+        global history_dir
+        global downloads_dir
         Thread(target = self.connection_test, daemon = True).start()
         VCOPT = {'mp4' : 0, 'mkv' : 1, 'avi' : 2, 'mov' : 3, 'flv' : 4}
         ACOPT = {'mp3' : 0, 'dsd' : 1, 'ogg' : 2, 'wav' : 3, 'flac' : 4}
         self.isactivetoast = False
         cache_dir = GLib.get_user_cache_dir()
+        history_dir = f'{cache_dir}/tmp/history_data/'
+        downloads_dir = f'{cache_dir}/tmp/downloads_data/'
         data_dir = GLib.get_user_data_dir()
         ConfigFileDir = GLib.get_user_cache_dir() + "/tmp/config"
         ffmpeg = f'{data_dir}/ffmpeg'
         ffmpegexec = ffmpeg + " -hide_banner -loglevel error"
         DownloadCacheDir = cache_dir + '/DownloadsCache/'
         # Database + DLoc File
-        conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-        db = conn.cursor()
-        db.execute('''
-          CREATE TABLE IF NOT EXISTS Downloads
-          ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [ext] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [VF] BIGINT DEFAULT -1, [AF] BIGINT DEFAULT -1)
-          ''')
-        db.execute('''
-          CREATE TABLE IF NOT EXISTS History
-          ([res] TEXT, [type] TEXT, [location] TEXT, [Finished_on] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [size] TEXT, [ext] TEXT, [url] TEXT, [status] TEXT)
-          ''')
-        conn.commit()
-        conn.close()
+        #print("test init")
+        #j = time_ns() / 1000000
+        if not os.path.isdir(history_dir):
+            os.mkdir(history_dir)
+        if not os.path.isfile(history_dir + 'id'):
+            f = open(history_dir + 'id', "w")
+            f.write("0")
+            f.close()
+        if not os.path.isdir(downloads_dir):
+            os.mkdir(downloads_dir)
+        if not os.path.isfile(downloads_dir + 'id'):
+            f = open(downloads_dir + 'id', "w")
+            f.write("0")
+            f.close()
+        #k = time_ns() / 1000000
+        #print(k-j)
         try:
             with open(ConfigFileDir, 'r') as f:
                 conf = f.read().splitlines()
@@ -149,11 +158,11 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 f.close()
         self.MainBuffer.connect("inserted_text", self.islistq, self, True)
         self.MainBuffer.connect("deleted_text", self.islistq, self, True)
-        Thread(target = self.AppData_Initialization, daemon = True).start()
         if self.connect_func():
             self.UpdateDownloads()
+            Thread(target = self.AppData_Initialization, daemon = True).start()
         else: self.startup_connFail = True
-        Thread(target = self.UpdateHistory, daemon = True).start()
+        Thread(target = self.UpdateHistory, args=[True], daemon = True).start()
         print("All New Downloads Will Be Exported At : " + DefaultLocPATH)
         print("New Video Files Will Be Exported As : " + DefaultVContainer)
         print("New Audio Files Will Be Exported As : " + DefaultAContainer)
@@ -168,6 +177,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
         # FFMPEG arch check and Download on /data
         if self.connect_func():
             if not os.path.isfile(ffmpeg):
+                for file in os.scandir(data_dir):
+                    os.remove(file.path)
                 NoneToast = Adw.Toast.new("Downloading ffmpeg ~41MB, You Will Be Able To Use The App oOnce We Finish This")
                 self.MainEntry.set_sensitive(False)
                 NoneToast.set_timeout(5)
@@ -199,7 +210,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 os.remove(f"{data_dir}/ffmpeg.tar.xz")
                 os.rename(f"{data_dir}/ffmpegdir/{co[0:-1]}/ffmpeg", f'{data_dir}/ffmpeg')
                 rmtree(f"{data_dir}/ffmpegdir")
-                NoneToast = Adw.Toast.new("ffmpeg Downloaded Successfully!")
+                NoneToast = Adw.Toast.new("Ffmpeg Downloaded Successfully!")
                 self.MainEntry.set_sensitive(True)
                 NoneToast.set_timeout(5)
                 self.MainToastOverlay.add_toast(NoneToast)
@@ -236,46 +247,78 @@ class MushroomWindow(Gtk.ApplicationWindow):
             Ext = DefaultAContainer
         fsize = self.size_format(size)
         dt = d.now().strftime("%d/%m/%Y %H:%M")
-        conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-        db = conn.cursor()
-        db.execute('''CREATE TABLE IF NOT EXISTS Downloads ([url] TEXT, [res] TEXT, [type] TEXT, [location] TEXT, [added_on] TEXT, [size] TEXT, [name] TEXT, [ext] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [VF] BIGINT DEFAULT -1, [AF] BIGINT DEFAULT -1)''')
-        db.execute('''INSERT INTO Downloads (url, res, type, location, added_on, size, name, ext) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (url, str(res), dtype, DefaultLocPATH, dt, fsize, name, Ext))
-        conn.commit()
-        conn.close()
+        #print("test downloads add")
+        #j = time_ns() / 1000000
+        if not os.path.isdir(downloads_dir):
+            os.mkdir(downloads_dir)
+        if not os.path.isfile(downloads_dir + 'id'):
+            f = open(downloads_dir + 'id', "w")
+            f.write("0")
+            f.close()
+        else:
+            f = open(downloads_dir + 'id', "r+")
+            thisid = int(f.read()) + 1
+            f.seek(0)
+            f.write(str(thisid))
+            f.close()
+        data = [url, res, dtype, DefaultLocPATH, dt, fsize, name, Ext, thisid, -1, -1]
+        for i in range(len(data)):
+            data[i] = str(data[i]) + "\n"
+        f = open(downloads_dir + str(thisid), "w")
+        f.writelines(data)
+        f.close()
+        #k = time_ns() / 1000000
+        #print(k-j)
 
 
     def AddToHistoryDB(self, UID, status):
         dt = d.now().strftime("%d/%m/%Y %H:%M")
-        conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-        db = conn.cursor()
-        x = list(db.execute(f'''SELECT * FROM Downloads WHERE id = {UID}'''))
-        x = x[0]
-        conn.commit()
-        db.execute('''
-          CREATE TABLE IF NOT EXISTS History
-          ([res] TEXT, [type] TEXT, [location] TEXT, [Finished_on] TEXT, [name] TEXT, [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [size] TEXT, [ext] TEXT, [url] TEXT, [status] TEXT)
-          ''')
-        db.execute('''
-          INSERT INTO History 
-          (res, type, location, Finished_on, name, size, ext, url, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ''', (x[1], x[2], x[3], dt, x[6], x[5], x[7], x[0], status))
-        conn.commit()
-        db.execute(f'''DELETE FROM Downloads WHERE id = {UID}''')
-        conn.commit()
-        conn.close()
+        ###############################################
+        #print("test history add")
+        #j = time_ns() / 1000000
+        if not os.path.isdir(history_dir):
+            os.mkdir(history_dir)
+        if not os.path.isfile(history_dir + 'id'):
+            f = open(history_dir + 'id', "w")
+            f.write("0")
+            f.close()
+        else:
+            f = open(history_dir + 'id', "r+")
+            thisid = int(f.read()) + 1
+            f.seek(0)
+            f.write(str(thisid))
+            f.close()
+        f = open(downloads_dir + str(UID), "r")
+        data = f.readlines()
+        f.close()
+        data = [data[1], data[2], data[3], dt, data[6], thisid, data[5], data[7], data[0], status]
+        for i in range(len(data)):
+            data[i] = str(data[i])
+            if "\n" not in data[i]:
+                data[i] = data[i]+ "\n"
+        f = open(history_dir + str(thisid), "w")
+        f.writelines(data)
+        f.close()
+        os.remove(downloads_dir + str(UID))
+        #k = time_ns() / 1000000
+        #print(k-j)
 
 
     def UpdateDownloads(self, *args):
         if os.path.isfile(ffmpeg):
-            conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-            db = conn.cursor()
-            queue = db.execute("SELECT * FROM Downloads")
-            for video in queue:
-                if str(video[8]) not in list(self.Download_Rows.keys()):
-                    print("Adding To Downloads List : " + video[6] + f"  ( {video[2]} )")
-                    self.Download_Rows[str(video[8])] = DownloadsRow(video[0], video[1], video[2], video[3], video[4], video[5], video[6], video[7], video[8], video[9], video[10])
-                    self.Downloads_List.prepend(self.Download_Rows[str(video[8])])
-                    self.TaskManagerPage.set_needs_attention(True)
+            #print("test update downloads")
+            #j = time_ns() / 1000000
+            for file in os.scandir(downloads_dir):
+                if file.name != "id":
+                    f = open(file.path, "r")
+                    data = [str(line.rstrip()) for line in f.readlines()]
+                    f.close()
+                    if data[8] not in list(self.Download_Rows.keys()):
+                        self.Download_Rows[data[8]] = DownloadsRow(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], int(data[8]), data[9], data[10])
+                        self.Downloads_List.prepend(self.Download_Rows[data[8]])
+                        self.TaskManagerPage.set_needs_attention(True)
+            #k = time_ns() / 1000000
+            #print(k-j)
             if len(list(self.Download_Rows.keys())) == 0:
                 for file in os.scandir(cache_dir + '/DownloadsCache'):
                     os.remove(file.path)
@@ -288,20 +331,27 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 self.GlobalStop_Button.set_sensitive(True)
                 self.TaskManagerPage.set_needs_attention(True)
                 self.Nothing_D_Revealer.set_reveal_child(False)
-            conn.close()
 
     
-    def UpdateHistory(self, *args):
-        conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-        db = conn.cursor()
-        queue = db.execute("SELECT * FROM History")
-        for video in queue:
-            if video[5] not in list(self.History_Rows.keys()):
-                print("Adding To History List : " + video[4] + f"  ( {video[1]} )")
-                self.History_Rows[video[5]] = HistoryRow(video[5], video[0], video[1], video[2], video[3], video[4], video[6], video[7], video[8], video[9])
-                self.History_List.prepend(self.History_Rows[video[5]])
-                self.Nothing_H_Revealer.set_reveal_child(False)
-                self.ClearHistory_Button.set_sensitive(True)
+    def UpdateHistory(self, All, *args):
+        #print("test update downloads")
+        #j = time_ns() / 1000000
+        for file in os.scandir(history_dir):
+            if file.name != "id":
+                f = open(file.path, "r")
+                data = [str(line.rstrip()) for line in f.readlines()]
+                f.close()
+                if data[5] not in list(self.History_Rows.keys()):
+                    self.History_Rows[data[5]] = 0
+                    print("Adding To History List : " + data[4] + f"  ( {data[1]} )")
+                    self.History_Rows[data[5]] = HistoryRow(data[5], data[0], data[1], data[2], data[3], data[4], data[6], data[7], data[8], data[9])
+                    self.History_List.prepend(self.History_Rows[data[5]])
+                    self.Nothing_H_Revealer.set_reveal_child(False)
+                    self.ClearHistory_Button.set_sensitive(True)
+                    if not All:
+                        break
+        #k = time_ns() / 1000000
+        #print(k-j)
         if len(list(self.History_Rows.keys())) == 0:
             self.ClearHistory_Button.set_sensitive(False)
             self.Nothing_H_Revealer.set_reveal_child(True)            
@@ -477,11 +527,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
     
     def loading_func(self, Target):
         RequestID = self.RequestID + 1
-
         self.MainLeaflet.set_visible_child(self.LoadingPage)
-
         self.loading = 1
-
         while self.loading == 1:
             self.LoadingProgressBar.pulse()
             sleep(0.25)
@@ -509,6 +556,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 if self.startup_connFail:
                     self.startup_connFail = False
                     self.UpdateDownloads()
+                    Thread(target = self.AppData_Initialization, daemon = True).start()
                 if self.MainLeaflet.get_visible_child() == self.FailPage:
                     self.MainLeaflet.set_visible_child(self.MainPage)
                 sleep(3)
@@ -602,6 +650,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
 
     def On_List_DownloadFunc(self, button, *args):
+        self.loading = 1
+        Thread(target = self.loading_func, args = [self.DonePage], daemon = True).start()
+        self.RequestID += 1
+        RequestID = self.RequestID
         button.set_sensitive(False)
         try:
             # Some Checks
@@ -619,9 +671,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 self.Fail("Connection Error")
                 button.set_sensitive(True)
                 return
-            # Setting Loading 
-            self.loading = 1
-            Thread(target = self.loading_func, args = [self.DonePage], daemon = True).start()
             # Getting Download Type
             if self.ListTypeBox.get_active() == 0:
                 ListRes = self.LResV[self.ListResBox.get_active()]
@@ -647,8 +696,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
                             ListRes = list(rows[i].RListA.keys())[rows[i].CellRBox.get_active()]
                         Size = video.streams.filter(type = "audio", abr = ListRes , file_extension = "webm").first().filesize
                     self.AddToTasksDB(rows[i].URL, ListRes, ListType, Size, rows[i].Title)
-                    self.UpdateDownloads()
                 i += 1
+            self.UpdateDownloads()
+            print( RequestID , self.RequestID)
             self.loading = 0
         except Exception as err:
             if err:
@@ -788,6 +838,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         self.ListSuggestionRevealer.set_reveal_child(False)
         self.MainLeaflet.set_visible_child(self.MainPage)
         button.set_sensitive(True)
+        collect()
         Thread(target = self.connection_test, daemon = True).start()
 
 
@@ -845,7 +896,9 @@ class MushroomWindow(Gtk.ApplicationWindow):
         button.set_sensitive(False)
         if self.History_Rows:
             for row in self.History_Rows.values():
-                Thread(target = row.Remove, daemon = True).start()
+                Thread(target = row.Remove, args = [button], daemon = True).start()
+        self.History_Rows.clear()
+        win.ClearHistory_Button.set_sensitive(False)
         self.Nothing_H_Revealer.set_reveal_child(True)
         return
 
@@ -875,9 +928,15 @@ class MushroomWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def GlobalStop(self, button, *args):
         if self.Download_Rows:
-            for row in self.Download_Rows.values():
-                Thread(target = row.Cancel, args = [row.StopButton], daemon = True).start()
             button.set_sensitive(False)
+            Thread(target = self.GSF,args=[button], daemon = True).start()
+
+    def GSF(self, button, *args):
+        for row in self.Download_Rows.values():
+            row.Cancel(button)
+            sleep(0.07)
+        self.Download_Rows.clear()
+        self.UpdateHistory(True)
 
 class ListRow(Adw.ActionRow):
     def __init__(self, url , title, author, lengthf, views, Playlist_Content_Group, ListV, ListA):
@@ -1069,11 +1128,8 @@ class DownloadsRow(Adw.ActionRow):
         self.set_child(self.MainRevealer)
         Thread(target = self.Download_Handler, daemon = True).start()
 
-    # TODO: Finalize The Controlling Buttons Stuff And Add Some UI Tweaks
-    # TODO: Make Da queueing Stuff For Both Of FFMPEG and Downloading Processes
-    # TODO: Make Da History
 
-    def Download_Handler(self, *args): # <------- Need Some Final Touches
+    def Download_Handler(self, *args):
         try:
             if os.path.isfile(data_dir + '/ffmpeg'):
                 self.Name = escape(sub('[^0-9a-zA-Z]+', '_', self.Name))
@@ -1086,6 +1142,7 @@ class DownloadsRow(Adw.ActionRow):
                     CHUNK = 1024*500
                     self.downloaded = self.AFP + self.VFP
                     if self.VFP+1 < stream.filesize:
+                        collect()
                         self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}_VF.download', stream.filesize, "VF")
                     if self.is_cancelled:
                         if os.path.isfile(f'{DownloadCacheDir}{NIR}_VF.download'):
@@ -1094,6 +1151,7 @@ class DownloadsRow(Adw.ActionRow):
                     else:
                         stream = yt.streams.filter(only_audio = True, file_extension = "mp4").last()
                         if self.AFP+1 < stream.filesize:
+                            collect()
                             self.chunk_handler(size, CHUNK, False, stream.url, f'{DownloadCacheDir}{NIR}_AF.download', stream.filesize, "AF")
                         if self.is_cancelled:
                             if os.path.isfile(f'{DownloadCacheDir}{NIR}_AF.download'):
@@ -1115,9 +1173,6 @@ class DownloadsRow(Adw.ActionRow):
                             win.ffmpeg_Q_Handler(self.ID, "i")
                             while self.ffmpegRun == True:
                                 sleep(1)
-                            #self.ffmpegProcess = subprocess.Popen(self.cmd, shell = True)
-                            #self.ffmpegProcess.wait()
-                            #self.ffmpegRun = False
                             #######################################
                             if self.fkilled:
                                 return
@@ -1139,6 +1194,7 @@ class DownloadsRow(Adw.ActionRow):
                     CHUNK = 1024*500
                     self.downloaded = self.AFP + self.VFP
                     if self.AFP+1 < stream.filesize:
+                        collect()
                         self.chunk_handler(size, CHUNK, True, stream.url, f'{DownloadCacheDir}{NIR}.download', size, "AF")
                     if self.is_cancelled:
                         if os.path.isfile(f'{DownloadCacheDir}{NIR}.download'):
@@ -1199,8 +1255,9 @@ class DownloadsRow(Adw.ActionRow):
         if zero:
             self.ProgressLabel.set_label(f"%0.00")
             self.ProgressBar.set_fraction(0)
-        conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-        db = conn.cursor()
+        z = open(downloads_dir + str(self.ID), "r+")
+        data = z.readlines()
+        z.seek(0)
         if ftype == "VF":
             self.downloadedOF = self.VFP
         else:
@@ -1222,8 +1279,15 @@ class DownloadsRow(Adw.ActionRow):
                     f.write(chunk)
                     self.downloaded += len(chunk)
                     self.downloadedOF += len(chunk)
-                    db.execute(f'''UPDATE Downloads SET {ftype} = {self.downloadedOF} WHERE id = {self.ID}''')
-                    conn.commit()
+                    #j = time_ns() / 1000000
+                    if ftype == "VF":
+                        data[9] = str(self.downloadedOF) + "\n"
+                    else:
+                        data[10] = str(self.downloadedOF) + "\n"
+                    z.writelines(data)
+                    z.seek(0)
+                    #k = time_ns() / 1000000
+                    #print(k-j)
                     self.ProgressLabel.set_label(f"%{(self.downloaded / (size))*100:.2f}")
                     self.ProgressBar.set_fraction(self.downloaded / (size))
                     # time for da cool chunk calculations
@@ -1235,15 +1299,16 @@ class DownloadsRow(Adw.ActionRow):
                     if int(CHUNK / CHUNKTIME) > 20*1024*1024:
                         CHUNK = 20*1024*1024
                     else:
-                        CHUNK = int((CHUNK / CHUNKTIME)/len(win.Download_Rows)) # TODO: change it to the number of S Downloads
+                        CHUNK = int(CHUNK / CHUNKTIME)
                     #print(str(CHUNK) + " " + str(CHUNKTIME))
                 else:
                     # no more data
                     break
             else:
                 sleep(0.3)
-        conn.close()
+        z.close()
         f.close()
+        collect()
 
 
     def Pause(self, button, *args):
@@ -1265,13 +1330,16 @@ class DownloadsRow(Adw.ActionRow):
             print(f"Task #{self.ID}: {self.Name} --Resumed")
             win.GlobalPause_Button.set_sensitive(True)
         return
-
+    
 
     def Cancel(self, button, *args):
         # run Destroy as Canceled
-        button.set_sensitive(False)
+        self.StopButton.set_sensitive(False)
         self.is_cancelled = True
-        Thread(target = self.Destroy, args=["Canceled"], daemon = True).start()
+        if button == self.StopButton:
+            Thread(target = self.Destroy, args=["Canceled", True], daemon = True).start()
+        else:
+            Thread(target = self.Destroy, args=["Canceled", False], daemon = True).start()
         return
 
 
@@ -1280,18 +1348,17 @@ class DownloadsRow(Adw.ActionRow):
         self.is_cancelled = True
         self.StopButton.set_sensitive(False)
         self.PauseButton.set_sensitive(False)
-        Thread(target = self.Destroy, args=["Failed"], daemon = True).start()
+        Thread(target = self.Destroy, args=["Failed", True], daemon = True).start()
         return
 
 
     def Done(self, *args):
         # run Destroy as Done
-        Thread(target = self.Destroy, args=["Done"], daemon = True).start()
+        Thread(target = self.Destroy, args=["Done", True], daemon = True).start()
         return
 
 
     def Dispose(self, *args):
-        self.MainRevealer.set_reveal_child(False)
         sleep(0.16)
         self.ispulse = False
         self.ProgressBar.unparent()
@@ -1324,14 +1391,15 @@ class DownloadsRow(Adw.ActionRow):
         self.MainRevealer.run_dispose()
         self.unparent()
         self.run_dispose()
+        collect()
         return
 
 
-    def Destroy(self, status):
+    def Destroy(self, status, remove):
         # Remove From Downloads Db And Add To History DB
         # then Update History
+        self.MainRevealer.set_reveal_child(False)
         win.AddToHistoryDB(self.ID, status)
-        win.UpdateHistory(win)
         if win.ffmpeg_queue:
             if str(self.ID) == win.ffmpeg_queue[0]:
                 self.killffmpeg()
@@ -1343,7 +1411,9 @@ class DownloadsRow(Adw.ActionRow):
                 sleep(0.1)
             self.ffmpegRun = False
         self.Dispose()
-        win.Download_Rows.pop(str(self.ID))
+        if remove:
+            win.Download_Rows.pop(str(self.ID))
+            win.UpdateHistory(win, False)
         if len(list(win.Download_Rows.keys())) == 0:
             win.Nothing_D_Revealer.set_reveal_child(True)
             win.TaskManagerPage.set_needs_attention(False)
@@ -1456,7 +1526,6 @@ class HistoryRow(Adw.ActionRow):
 
 
     def Dispose(self, *args):
-        self.MainRevealer.set_reveal_child(False)
         sleep(0.16)
         self.RemoveButton.set_sensitive(False)
         if self.status == "Failed" or self.status == "Canceled":
@@ -1483,23 +1552,21 @@ class HistoryRow(Adw.ActionRow):
         self.MainRevealer.run_dispose()
         self.unparent()
         self.run_dispose()
+        collect()
         return
+        
 
-    def DB_remove(self, *args):
-        conn = connect(cache_dir + '/tmp/MushroomData.db', check_same_thread=False)
-        db = conn.cursor()
-        db.execute(f'''DELETE FROM History WHERE id = {self.id}''')
-        conn.commit()
-        conn.close()
-        win.History_Rows.pop(self.id)
-        if len(list(win.History_Rows.keys())) == 0:
-            win.ClearHistory_Button.set_sensitive(False)
-            win.Nothing_H_Revealer.set_reveal_child(True)
-
-    def Remove(self, *args):
+    def Remove(self, button, *args):
+        self.MainRevealer.set_reveal_child(False)
         Thread(target = self.Dispose, daemon = True).start()
-        Thread(target = self.DB_remove, daemon = True).start()
+        os.remove(history_dir + str(self.id))
+        if button == self.RemoveButton:
+            win.History_Rows.pop(self.id)
+        if len(list(win.History_Rows.keys())) == 0 and button == self.RemoveButton:
+            win.Nothing_H_Revealer.set_reveal_child(True)
+            win.ClearHistory_Button.set_sensitive(False)
         return
+
 
     def OpenLoc(self, *args):
         subprocess.call(["xdg-open", self.loc])
