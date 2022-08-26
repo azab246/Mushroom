@@ -113,6 +113,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
         global ffmpegexec
         global history_dir
         global downloads_dir
+        global rows
+        rows = None
         Thread(target = self.connection_test, daemon = True).start()
         VCOPT = {'mp4' : 0, 'mkv' : 1, 'avi' : 2, 'mov' : 3, 'flv' : 4}
         ACOPT = {'mp3' : 0, 'dsd' : 1, 'ogg' : 2, 'wav' : 3, 'flac' : 4}
@@ -426,8 +428,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
     def Playlist_Data(self, *args):
         self.RequestID += 1
-        RequestID = self.RequestID
-        global rows        
+        global rows
+        RequestID = self.RequestID     
         if self.connect_func() == False:
             return
         try:
@@ -442,6 +444,11 @@ class MushroomWindow(Gtk.ApplicationWindow):
             videos = self.plist.videos
             if self.MainLeaflet.get_visible_child() != self.LoadingPage or RequestID != self.RequestID: return
             self.l = len(videos)
+            if rows != None:
+                for row in rows:
+                    if row != 0:
+                        self.Playlist_Content_Group.remove(row)
+            collect()
             rows = [0]*self.l
             self.LResV = []
             self.LResA = []
