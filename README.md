@@ -44,7 +44,7 @@ Alternatively, you can build it with __Meson__:
 
 ## Contributing
 
-Every help is appreciated! You can always review the code or take a look at the posted issues. But as a result of the above, the code may be primitive and needs a lot of cleaning, Many parts of the core itself may need radically change to solve an issue
+Every help is appreciated! You can always review the code or take a look at the posted issues. But as a result of what mentioned below, the code may be primitive and needs a lot of cleaning, Many parts of the core itself may need radically change to solve an issue
 
 ## Disclaimer
 This app was made for the [CS50x 2022 final project](https://cs50.harvard.edu/x/2022/).
