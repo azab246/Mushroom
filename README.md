@@ -29,10 +29,10 @@ The App Uses [FFMPEG](https://ffmpeg.org/) To Handle YouTube DASH Streams Which 
 
 This App Is Made By A __Complete Noob__ With Only 2 Months Of Experience On CS and Hasn't Worked on any Similar Projects Before, While This Project Is Made Mainly As a [CS50x](https://cs50.harvard.edu/x/2022/) Final Project     
 <br>
- __So Even Though The App is Working__, The Code Might be just A Complete Peice Of Trash In Some Perspectives,
-Some Might See It as an Inefficiency Masterpiece and _bc of my lack of experience_ It Might Even Have __Security Flaws__,   
+ __So Even Though The App is Completely Working__, The Code Might be just A Complete Peice Of Trash In Some Perspectives,
+Some Might See It as an Inefficiency Masterpiece and _bc of my lack of experience_ It Might Even Have __Security Flaws__, You Might face __Sudden Crashes__, Smh High Memory Usage __~150 mb__ After/During Downloading Quite Large Number __(+10)__ Of Tasks At The Same Time with __Bad Memory Management__    
 <br>
-btw I Can Clearly Agree About That The Code Needs An __Intense Cleaning__ _Even In My POV_, And I Can't Guarantee That I'll Even Maintain It  
+btw I Can Clearly Agree About That The Code Needs An __Intense Cleaning__ _Even In My POV_, And __I Can't Guarantee That I'll Even Maintain It__  
 <br>
 So While I Can Say That The App Is __Working Effectively__,
 You Are Still Using It At __Your Own Responsability__ :>
