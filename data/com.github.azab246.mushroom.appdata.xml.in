@@ -4,31 +4,27 @@
   <id>com.github.azab246.mushroom</id>
   <name>Mushroom</name>
   <developer_name>Azab246</developer_name>
-  <summary>A Simple Youtupe Video Downloader Based On Pytube</summary>
-  <launchable type="desktop-id">com.github.taiko2k.avvie.desktop</launchable>
+  <summary>A Simple Youtube Video Downloader Based On Pytube</summary>
+  <launchable type="desktop-id">com.github.azab246.mushroom.desktop</launchable>
   <metadata_license>CC0-BY-SA-3.0</metadata_license>
   <project_license>GPL-3.0+</project_license>
   <url type="homepage">https://github.com/azab246/Mushroom</url>
   <url type="bugtracker">https://github.com/azab246/Mushroom/issues</url>
   <icon type="remote" height="256" width="256">https://raw.githubusercontent.com/azab246/Mushroom/Main/src/res/Mushroom.svg</icon>
-
-  <!--description>
-    <p></p>
-  </description-->
-
-  <!--screenshots>
+  <description>
+    <p>Download Youtube Videos/Playlists With A Couble of Clicks With Resolutions Up To 8k!</p>
+  </description>
+  <screenshots>
     <screenshot type="default">
-      <image type="source"></image>
-      <caption></caption>
+      <image type="source">https://github.com/azab246/Mushroom/blob/Main/Screenshots/01-dark-prealpha.png</image>
+      <caption>Start Page</caption>
     </screenshot>
-  </screenshots-->
-
+  </screenshots>
   <categories>
     <category>Utilities</category>
   </categories>
-
   <releases>
-    <release version="0.1" date="">
+    <release version="0.1" date="26/8/2022">
       <description>
         <ul>
           <li>First Beta!</li>
@@ -36,14 +32,10 @@
       </description>
     </release>
   </releases>
-
   <content_rating type="oars-1.1" />
-
   <kudos>
     <kudo>HiDpiIcon</kudo>
     <kudo>ModernToolkit</kudo>
   </kudos>
-
   <update_contact>abdalrahman.azab2004@gmail.com</update_contact>
-
 </component>
