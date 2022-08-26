@@ -2,42 +2,40 @@
 
 ## Mushroom 
 
-an Elegant Youtube Video Downloader Based On [Pytube](https://github.com/pytube/pytube) And Built With [GTK4](https://github.com/GNOME/pygobject) & [Libadwaita](https://gitlab.gnome.org/GNOME/libadwaita)
+An elegant youtube video downloader based on [pytube](https://github.com/pytube/pytube) and built with [GTK4](https://github.com/GNOME/pygobject) & [libadwaita](https://gitlab.gnome.org/GNOME/libadwaita)
 <br><br><br><br>
 
 ## Features
 <img src="https://raw.githubusercontent.com/azab246/Mushroom/Main/Screenshots/01-dark-prealpha.png" height="350px" align="right">
 <br><br>
 
-- Download __Videos__ With Resolutions __Up To 8K__!
-- Download __Playlists__ With One Click! _~actually 2_
-- Download Videos/Playlists Audio Only
-- Support For More Than 8 Different Downloading Formats
-- And More
+- Download __videos__ with resolutions __up to 8K__!
+- Download __playlists__ with one click! _~actually 2_
+- Download videos/playlists audio only
+- Support for more than 8 different downloading formats
+- And more!
 
 <br><br>
 
 ## Notes
-A FFMPEG Static Build File Will Be Downloaded At The First App Launch
+a FFMPEG static build will be downloaded at the first app launch
 
-The App Uses [FFMPEG](https://ffmpeg.org/) To Handle YouTube DASH Streams Which Is The Method That The App Uses For All Video Downloads
+The app uses [FFMPEG](https://ffmpeg.org/) to handle youtube DASH streams which is the method that the app uses for all downloads
 
 <br><br>
 
 
 ## Disclaimer
 
-This App Is Made By A __Complete Noob__ With Only 2 Months Of Experience On CS and Hasn't Worked on any Similar Projects Before, While This Project Is Made Mainly As a [CS50x](https://cs50.harvard.edu/x/2022/) Final Project     
+This app is made by a __complete noob__ with only 2 months of experience on cs and hasn't worked on any similar projects before, while this project is made mainly as a [CS50x](https://cs50.harvard.edu/x/2022/) final project     
 <br>
- __So Even Though The App is Completely Working__, The Code Might be just A Complete Peice Of Trash In Some Perspectives,
-Some Might See It as an Inefficiency Masterpiece and _bc of my lack of experience_ It Might Even Have __Security Flaws__, You Might face __Sudden Crashes__, Smh High Memory Usage __~150 mb__ After/During Downloading Quite Large Number __(+10)__ Of Tasks At The Same Time with __Bad Memory Management__    
+ __So even though the app is completely working__, the code might be just a complete peice of trash in some perspectives,
+some might see it as an inefficiency masterpiece and _bc of my lack of experience_ it might even have __security flaws__, you might face __sudden crashes__, High memory usage __~150 mb__ after/during the download of quite large number __(+10)__ of tasks at the same time, __bad memory management__    
 <br>
-btw I Can Clearly Agree About That The Code Needs An __Intense Cleaning__ _Even In My POV_, And __I Can't Guarantee That I'll Even Maintain It__  
+btw i can clearly agree about that the code needs an __intense cleaning__ _even in my pov_, and __i can't guarantee that i'll even maintain it__  
 <br>
-So While I Can Say That The App Is __Working Effectively__,
-You Are Still Using It At __Your Own Responsability__ :>
+So while i can say that the app is __working effectively__,
+You are still using It at __your own responsability__ :>
 
 <br><br>
-
-## Still Under Development
 
