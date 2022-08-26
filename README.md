@@ -24,6 +24,28 @@ The app uses [FFMPEG](https://ffmpeg.org/) to handle youtube DASH streams (the m
 2. Download the release, then locate the `.flatpak` file and run `sudo flatpak install com.github.azab246.mushroom.flatpak` within the same directory
 3. Run `flatpak run com.github.azab246.mushroom`
 
+## Build from source
+
+Using __GNOME Builder__ will automatically resolve all relevant flatpak SDKs automatically. You can then export the bundle if you wish.
+
+Alternatively, you can build it with __Meson__:
+
+ clone the repo and use the following commands to build .
+
+    meson builddir --prefix=/usr/local
+    sudo ninja -C builddir install
+
+### To build a flatpak from the command line:
+
+
+    flatpak-builder --user --install 
+    flatpak-builddir com.github.azab246.mushroom.json
+    flatpak run com.github.azab246.mushroom
+
+## Contributing
+
+Every help is appreciated! You can always review the code or take a look at the posted issues. But as a result of the above, the code may be primitive and needs a lot of cleaning, Many parts of the core itself may need radically change to solve an issue
+
 ## Disclaimer
 This app was made for the [CS50x 2022 final project](https://cs50.harvard.edu/x/2022/).
 This app is developed by a beginner programmer with no previous experience. The developer makes no guarantees on the reliability or performance of this application. For more information, see the license.
