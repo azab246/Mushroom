@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/azab246/Mushroom/Main/src/res/Mushroom.svg" height="250px" vspace="20px" alt="Mushroom logo">
+  <img src="https://raw.githubusercontent.com/azab246/Mushroom/Main/src/gtk/res/Mushroom.svg" height="250px" vspace="20px" alt="Mushroom logo">
 </p>
  
 # Mushroom 
