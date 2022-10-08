@@ -23,7 +23,7 @@ gi.require_version('Adw', '1')
 
 from gi.repository import GObject, Gtk, Adw, Pango, Gdk, Gio, GLib
 from pytube import YouTube, Playlist
-from re import sub, search, findall
+from re import sub, search, findall, UNICODE
 from sqlite3 import connect
 from threading import Thread
 from time import sleep, time_ns
@@ -375,6 +375,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.link = self.MainBuffer.get_text()
             self.vid = YouTube(self.link)
             if self.MainLeaflet.get_visible_child() != self.LoadingPage or RequestID != self.RequestID: return
+            if len(self.vid.title)> 75:
+                self.vid.title = self.vid.title[0:74] + "..."
             self.VidDetails.set_title(escape(self.vid.title))
             self.VidName = self.vid.title
             self.VidDetails.set_description(f"Channel: {escape(self.vid.author)}  Length: " + f"{self.time_format(self.vid.length)}" + "   Views: " + f"{self.vid.views:,}")
@@ -502,8 +504,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 if x == self.l:
                     self.LResA.append(list(self.ListResA[0].keys())[i])
                     self.ListAuidRes.append([f"{list(self.ListResA[0].keys())[i]}"])
-            print(f'Common Audio Bitrates(Being Used As A Global Options): {self.LResA}') 
-            self.ListNameLabel.set_label(self.plist.title)
+            print(f'Common Audio Bitrates(Being Used As A Global Options): {self.LResA}')
+            if len(self.plist.title)> 75:
+                self.plist.title = self.plist.title[0:74] + "..."
+            self.ListNameLabel.set_title(escape(self.plist.title))
             # setting combo boxes data
             self.ListTypeList.append(['Video'])
             self.ListTypeList.append(['Audio'])
@@ -1078,7 +1082,7 @@ class DownloadsRow(Adw.ActionRow):
         self.ProgressBox = Gtk.Box.new(orientation = 0, spacing = 0)
         self.ProgressBox.set_hexpand(True)
         # setting Title
-        if len(self.Name) > 35:
+        if len(self.Name) > 40:
             Namex = self.Name[0:34] + '...'
             self.Title = Gtk.Label.new(Namex + f' ( {self.ext.upper()} )')
         else:
@@ -1139,7 +1143,13 @@ class DownloadsRow(Adw.ActionRow):
     def Download_Handler(self, *args):
         try:
             if os.path.isfile(data_dir + '/ffmpeg'):
-                self.Name = escape(sub('[^0-9a-zA-Z]+', '_', self.Name))
+                self.Name = escape(sub('[\W_]+', '_', self.Name, UNICODE))
+                print()
+                while True:
+                    if "__" in self.Name:
+                        self.Name.replace("__" , "_")
+                    else:
+                        break
                 yt = YouTube(self.URL)
                 NIR = escape(f'{self.Name}_{self.ID}_{self.Res}')
                 if self.Type == "Video":
@@ -1480,7 +1490,7 @@ class HistoryRow(Adw.ActionRow):
         self.InnerBox2.set_orientation(1)
         self.InnerBox2.set_margin_end(20)
         # setting Title
-        if len(name) > 35:
+        if len(name) > 40:
             Namex = name[0:34] + '...'
             self.Title = Gtk.Label.new(Namex + f' ( {ext.upper()} )')
         else:
