@@ -1499,7 +1499,7 @@ class HistoryRow(Adw.ActionRow):
         self.Subtitle.set_ellipsize(3)
         self.Subtitle.set_max_width_chars(25)
         self.Subtitle.set_xalign(0)
-        self.Title.add_css_class("dim-label")
+        self.Subtitle.add_css_class("dim-label")
         self.Subtitle.set_margin_top(5)
         self.InnerBox2.append(self.Subtitle)
         self.InnerBox1.append(self.InnerBox2)
