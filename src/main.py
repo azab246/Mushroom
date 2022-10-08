@@ -40,7 +40,7 @@ global APPID
 APPID = 'com.github.azab246.mushroom'
 
 
-@Gtk.Template(resource_path='/com/github/azab246/mushroom/gtk/window.ui')
+@Gtk.Template(resource_path='/com/github/azab246/mushroom/window.ui')
 class MushroomWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'MushroomWindow'
 
@@ -1591,21 +1591,8 @@ class HistoryRow(Adw.ActionRow):
         return
 
 
-class AboutDialog(Gtk.AboutDialog):
-    def __init__(self, parent):
-        Gtk.AboutDialog.__init__(self)
-        self.props.program_name = 'Mushroom'
-        self.props.version = "0.1.0"
-        self.props.authors = ['Abdalrahman Azab']
-        self.props.copyright = '2022 Abdalrahman Azab'
-        self.props.logo_icon_name = APPID
-        self.props.modal = True
-        self.set_transient_for(parent)
-        self.present()
 
-
-
-@Gtk.Template(resource_path='/com/github/azab246/mushroom/gtk/preferences.ui')
+@Gtk.Template(resource_path='/com/github/azab246/mushroom/preferences.ui')
 class PreferencesWindow(Adw.PreferencesWindow):
     __gtype_name__ = 'PreferencesWindow'
 
@@ -1735,7 +1722,7 @@ class MushroomApplication(Adw.Application):
         self.connect("shutdown", self.quitF)
         self.create_action('quit', self.QB, ['<primary>q'])
         self.create_action('about', self.on_about_action)
-        self.create_action('PreferencesWindow', self.on_Preferences_action)
+        self.create_action('PreferencesWindow', self.on_Preferences_action, ['<primary>p'])
 
 
     def do_activate(self):
@@ -1759,9 +1746,16 @@ class MushroomApplication(Adw.Application):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
-    def on_about_action(self, widget, _):
-        """Callback for the app.about action."""
-        about = AboutDialog(self.props.active_window)
+
+    def on_about_action(self, _action: Gio.Action, _param: GLib.Variant) -> None:
+        """Invoked when we click "about" in the main menu"""
+        builder = Gtk.Builder.new_from_resource(
+            "/com/github/azab246/mushroom/about.ui"
+        )
+        about_dialog = builder.get_object("AboutWindow")
+        about_dialog.set_transient_for(self.props.active_window)
+        about_dialog.present()
+
 
     def quitF(self, *args):
         print("Cleaning Up...")
@@ -1772,6 +1766,18 @@ class MushroomApplication(Adw.Application):
                 win.Download_Rows[D].killffmpeg()
                 print("Ending #" + str(D))
 
+    """def warning_cb(self, opj, response):
+        print(response)
+
+
+    def quit_warning(self, *args):
+        builder = Gtk.Builder.new_from_resource(
+            "/com/github/azab246/mushroom/quit-dialog.ui"
+        )
+        quit_dialog = builder.get_object("quit-dialog")
+        quit_dialog.set_transient_for(win)
+        quit_dialog.connect("response", self.warning_cb)
+        quit_dialog.present()"""
 
     def QB(self, *args):
         self.quit()

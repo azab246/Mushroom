@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwMessageDialog" id="quit-dialog">
+    <property name="heading" translatable="yes">Are You Sure?</property>
+    <property name="body" translatable="yes">Some tasks are still downloading, Closing the app will NOT continue to download them in the background.</property>
+    <property name="default-response">cancel</property>
+    <property name="close-response">cancel</property>
+    <responses>
+      <response id="cancel" translatable="yes" appearance="suggested">_Keep Running</response>
+      <response id="discard" translatable="yes" appearance="destructive">_Close</response>
+    </responses>
+  </object>
+</interface>
+

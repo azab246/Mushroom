@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+    <object class="AdwAboutWindow" id="AboutWindow">
+        <property name="version">@VERSION@</property>
+        <property name="copyright">@COPYRIGHT@</property>
+        <property name="comments" translatable="yes">Download Youtupe Videos</property>
+        <property name="developers">@AUTHORS@</property>
+        <property name="developer_name">Abdalrahman Azab</property>
+        <property name="application_name" translatable="yes">Mushroom</property>
+        <property name="application_icon">@APPID@</property>
+        <property name="website">@PURL@</property>
+        <property name="license_type">gpl-3-0-only</property>
+        <property name="release_notes_version">0.2.0</property>
+        <property name="issue_url">https://github.com/azab246/Mushroom/issues</property>
+        <property name="issue_url">https://github.com/azab246/Mushroom/issues/new</property>
+    </object>
+</interface>

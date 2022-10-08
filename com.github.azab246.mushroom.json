@@ -1,9 +1,9 @@
 {
     "app-id" : "com.github.azab246.mushroom",
     "runtime" : "org.gnome.Platform",
-    "runtime-version" : "42",
+    "runtime-version" : "43",
     "sdk" : "org.gnome.Sdk",
-    "command" : "mushroom",
+    "command" : "Mushroom",
     "finish-args" : [
         "--share=network",
         "--share=ipc",
@@ -39,7 +39,7 @@
             ]
         },
         {
-            "name" : "mushroom",
+            "name" : "Mushroom",
             "builddir" : true,
             "buildsystem" : "meson",
             "sources" : [
