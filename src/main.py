@@ -24,7 +24,6 @@ gi.require_version('Adw', '1')
 from gi.repository import GObject, Gtk, Adw, Pango, Gdk, Gio, GLib
 from pytube import YouTube, Playlist
 from re import sub, search, findall, UNICODE
-from sqlite3 import connect
 from threading import Thread
 from time import sleep, time_ns
 from datetime import datetime as d
@@ -37,6 +36,8 @@ from tarfile import open as openTAR
 from shutil import rmtree, move
 
 global APPID
+global MONITOR
+MONITOR = Gio.NetworkMonitor.get_default()
 APPID = 'com.github.azab246.mushroom'
 
 
@@ -115,7 +116,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
         global downloads_dir
         global rows
         rows = None
-        Thread(target = self.connection_test, daemon = True).start()
+        Thread(target = self.connection_test, args = [1], daemon = True).start()
         VCOPT = {'mp4' : 0, 'mkv' : 1, 'avi' : 2, 'mov' : 3, 'flv' : 4}
         ACOPT = {'mp3' : 0, 'dsd' : 1, 'ogg' : 2, 'wav' : 3, 'flac' : 4}
         self.isactivetoast = False
@@ -160,9 +161,16 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 f.close()
         self.MainBuffer.connect("inserted_text", self.islistq, self, True)
         self.MainBuffer.connect("deleted_text", self.islistq, self, True)
-        if self.connect_func():
+        #if self.connect_func():
+        try:
+            host='http://google.com'
+            DRequest.urlopen(host)
+            print("Connection Has Been Established")
             self.UpdateDownloads()
             Thread(target = self.AppData_Initialization, daemon = True).start()
+        except:
+            print("Connection Failed")
+            self.Fail("No Connection")
         else: self.startup_connFail = True
         Thread(target = self.UpdateHistory, args=[True], daemon = True).start()
         print("All New Downloads Will Be Exported At : " + DefaultLocPATH)
@@ -177,8 +185,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
             os.mkdir(cache_dir + '/DownloadsCache')
 
         # FFMPEG arch check and Download on /data
-        if self.connect_func():
-            if not os.path.isfile(ffmpeg):
+        if not os.path.isfile(ffmpeg):
+            if self.connect_func():
                 for file in os.scandir(data_dir):
                     os.remove(file.path)
                 NoneToast = Adw.Toast.new("Downloading ffmpeg ~41MB, You Will Be Able To Use The App oOnce We Finish This")
@@ -548,36 +556,33 @@ class MushroomWindow(Gtk.ApplicationWindow):
 
 
     def connect_func(self):
-        try:
-            host='http://google.com'
-            DRequest.urlopen(host)
+        if MONITOR.get_connectivity() == 4:
             print("Connection Has Been Established")
             return True
-        except:
+        else:
             print("Connection Failed")
             self.Fail("No Connection")
             return False
 
 
-    def connection_test(self):
+    def connection_test(self, *args):
+        if args and args[0] == 1:
+            sleep(3)
         while True:
-            try:
-                host='http://google.com'
-                DRequest.urlopen(host)
+            if MONITOR.get_connectivity() == 4:
                 if self.startup_connFail:
                     self.startup_connFail = False
                     self.UpdateDownloads()
                     Thread(target = self.AppData_Initialization, daemon = True).start()
                 if self.MainLeaflet.get_visible_child() == self.FailPage:
                     self.MainLeaflet.set_visible_child(self.MainPage)
-                sleep(3)
-            except:
+            else:
                 if self.MainLeaflet.get_visible_child() != self.FailPage:
                     print("Connection Failed")
                     self.Fail("No Connection")
                 if self.GlobalPause_Button.get_sensitive():
                     self.GlobalPause(self.GlobalPause_Button)
-                sleep(3)
+            sleep(1)
 
 
 
@@ -679,7 +684,6 @@ class MushroomWindow(Gtk.ApplicationWindow):
                 button.set_sensitive(True)
                 return
             if self.connect_func() == False:
-                self.Fail("Connection Error")
                 button.set_sensitive(True)
                 return
             # Getting Download Type
@@ -1775,19 +1779,6 @@ class MushroomApplication(Adw.Application):
             for D in list(win.Download_Rows.keys()):
                 win.Download_Rows[D].killffmpeg()
                 print("Ending #" + str(D))
-
-    """def warning_cb(self, opj, response):
-        print(response)
-
-
-    def quit_warning(self, *args):
-        builder = Gtk.Builder.new_from_resource(
-            "/com/github/azab246/mushroom/quit-dialog.ui"
-        )
-        quit_dialog = builder.get_object("quit-dialog")
-        quit_dialog.set_transient_for(win)
-        quit_dialog.connect("response", self.warning_cb)
-        quit_dialog.present()"""
 
     def QB(self, *args):
         self.quit()
