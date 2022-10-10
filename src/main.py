@@ -23,11 +23,10 @@ gi.require_version('Adw', '1')
 
 from gi.repository import GObject, Gtk, Adw, Pango, Gdk, Gio, GLib
 from pytube import YouTube, Playlist
-from re import sub, search, findall, UNICODE
+from re import sub, search, findall, escape, compile, UNICODE
 from threading import Thread
 from time import sleep, time_ns
 from datetime import datetime as d
-from html import escape
 from urllib import request as DRequest
 import os
 import subprocess
@@ -385,9 +384,10 @@ class MushroomWindow(Gtk.ApplicationWindow):
             if self.MainLeaflet.get_visible_child() != self.LoadingPage or RequestID != self.RequestID: return
             if len(self.vid.title)> 75:
                 self.vid.title = self.vid.title[0:74] + "..."
-            self.VidDetails.set_title(escape(self.vid.title))
+            self.VidDetails.set_title(compile('|'.join(map(escape, ['&', '<', '>', "'", '"']))).sub("", self.vid.title))
             self.VidName = self.vid.title
-            self.VidDetails.set_description(f"Channel: {escape(self.vid.author)}  Length: " + f"{self.time_format(self.vid.length)}" + "   Views: " + f"{self.vid.views:,}")
+            auth = compile('|'.join(map(escape, ['&', '<', '>', "'", '"']))).sub("", self.vid.author)
+            self.VidDetails.set_description(f"Channel: {auth}  Length: " + f"{self.time_format(self.vid.length)}" + "   Views: " + f"{self.vid.views:,}")
             # setting combo boxes data
             self.SizesA = []
             self.SizesV = []
@@ -515,7 +515,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
             print(f'Common Audio Bitrates(Being Used As A Global Options): {self.LResA}')
             if len(self.plist.title)> 75:
                 self.plist.title = self.plist.title[0:74] + "..."
-            self.ListNameLabel.set_title(escape(self.plist.title))
+            self.ListNameLabel.set_title(compile('|'.join(map(escape, ['&', '<', '>', "'", '"']))).sub("", self.plist.title))
             # setting combo boxes data
             self.ListTypeList.append(['Video'])
             self.ListTypeList.append(['Audio'])
@@ -989,11 +989,12 @@ class ListRow(Adw.ActionRow):
         self.check.add_css_class("selection-mode")
         self.add_prefix(self.check)
         self.add_suffix(self.CellRBox)
-        name = escape(title)
+        name = compile('|'.join(map(escape, ['&', '<', '>', "'", '"']))).sub("", title)
         if len(name) > 60:
             name = name[:60]+"..."
         self.set_title(name)
-        self.set_subtitle(f"Channel: {escape(author)} Length: " + lengthf + " Views: " + f"{views:,}")
+        auth = compile('|'.join(map(escape, ['&', '<', '>', "'", '"']))).sub("", author)
+        self.set_subtitle(f"Channel: {auth} Length: " + lengthf + " Views: " + f"{views:,}")
         Playlist_Content_Group.add(self)
 
 
@@ -1147,7 +1148,7 @@ class DownloadsRow(Adw.ActionRow):
     def Download_Handler(self, *args):
         try:
             if os.path.isfile(data_dir + '/ffmpeg'):
-                self.Name = escape(sub('[\W_]+', '_', self.Name, UNICODE))
+                self.Name = sub('[\W_]+', '_', self.Name, UNICODE)
                 print()
                 while True:
                     if "__" in self.Name:
@@ -1155,7 +1156,7 @@ class DownloadsRow(Adw.ActionRow):
                     else:
                         break
                 yt = YouTube(self.URL)
-                NIR = escape(f'{self.Name}_{self.ID}_{self.Res}')
+                NIR = compile('|'.join(map(escape, ['&', '<', '>', "'", '"']))).sub("", f'{self.Name}_{self.ID}_{self.Res}')
                 if self.Type == "Video":
                     stream = yt.streams.filter(progressive = False, only_video = True, type = "video", file_extension='mp4', res= self.Res).first()
                     sa = yt.streams.filter(only_audio = True, file_extension = "mp4").last().filesize
