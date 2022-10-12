@@ -383,8 +383,12 @@ class MushroomWindow(Gtk.ApplicationWindow):
             self.vid = YouTube(self.link)
             if self.MainLeaflet.get_visible_child() != self.LoadingPage or RequestID != self.RequestID: return
             if len(self.vid.title)> 75:
-                self.vid.title = self.vid.title[0:74] + "..."
-            self.VidDetails.set_title(compile('|'.join(map(escape, ['&', '<', '>', "'", '"']))).sub("", self.vid.title))
+                Title = self.vid.title[0:74] + "..."
+            else:
+                Title = self.vid.title
+            if len(self.vid.title) > 250:
+                self.vid.title = self.vid.title[0:249]
+            self.VidDetails.set_title(compile('|'.join(map(escape, ['&', '<', '>', "'", '"']))).sub("", Title))
             self.VidName = self.vid.title
             auth = compile('|'.join(map(escape, ['&', '<', '>', "'", '"']))).sub("", self.vid.author)
             self.VidDetails.set_description(f"Channel: {auth}  Length: " + f"{self.time_format(self.vid.length)}" + "   Views: " + f"{self.vid.views:,}")
@@ -992,6 +996,8 @@ class ListRow(Adw.ActionRow):
         name = compile('|'.join(map(escape, ['&', '<', '>', "'", '"']))).sub("", title)
         if len(name) > 60:
             name = name[:60]+"..."
+        if len(self.Title) > 250:
+            self.Title = self.Title[0:249]
         self.set_title(name)
         auth = compile('|'.join(map(escape, ['&', '<', '>', "'", '"']))).sub("", author)
         self.set_subtitle(f"Channel: {auth} Length: " + lengthf + " Views: " + f"{views:,}")
@@ -1093,7 +1099,7 @@ class DownloadsRow(Adw.ActionRow):
         else:
             self.Title = Gtk.Label.new(self.Name + f' ( {self.ext.upper()} )')
         self.Title.set_ellipsize(3)
-        self.Title.set_max_width_chars(30)
+        self.Title.set_max_width_chars(40)
         self.Title.set_xalign(0)
         self.Title.add_css_class("heading")
         # setting Subtitle
