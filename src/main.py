@@ -747,8 +747,8 @@ class MushroomWindow(Gtk.ApplicationWindow):
         return
 
     @Gtk.Template.Callback()
-    def Submit_Func(self, button):
-        button.set_sensitive(False)
+    def Submit_Func(self, *args):
+        self.SubmitButton.set_sensitive(False)
         x = self.islistq(printT = False)
         if os.path.isfile(ffmpeg):
             if x == 1:
@@ -773,7 +773,7 @@ class MushroomWindow(Gtk.ApplicationWindow):
                     Thread(target = self.Video_Data, daemon=True).start()
                     print("Submitted A Video Downloading Request")
                     self.ListSuggestionRevealer.set_reveal_child(False)
-        button.set_sensitive(True)
+        self.SubmitButton.set_sensitive(True)
 
 
     @Gtk.Template.Callback()
@@ -1757,7 +1757,7 @@ class MushroomApplication(Adw.Application):
         if not win:
             win = MushroomWindow(application=self)
         win.present()
-
+        self.create_action('Submit', win.Submit_Func, ['Return'])
         style_provider = Gtk.CssProvider()
         style_provider.load_from_resource('/com/github/azab246/mushroom/res/style.css')
 
